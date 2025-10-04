@@ -270,10 +270,8 @@ db_migrate(sqlite3 *db)
 		case DB_MIGRATE_DOESNT_EXIST:
 			r = db_migrate_table_create(db);
 			if (r != DB_MIGRATE_OK)
-			{
-				r = DB_MIGRATE_ERROR;
 				goto _done;
-			}
+
 			break;
 	}
 
@@ -282,11 +280,8 @@ db_migrate(sqlite3 *db)
 		goto _done;
 
 	r = db_migrate_step(stmt_read, &applied_migration);
-	if (r != SQLITE_OK)
-	{
-		r = DB_MIGRATE_ERROR;
+	if (r != DB_MIGRATE_OK)
 		goto _done;
-	}
 
 	for (migration = db_migrations; migration->name != NULL; migration++)
 	{
@@ -310,10 +305,7 @@ db_migrate(sqlite3 *db)
 		{
 			r = db_migrate_apply(db, migration->sql);
 			if (r != DB_MIGRATE_OK)
-			{
-				r = DB_MIGRATE_ERROR;
 				goto _done;
-			}
 
 			if (stmt_insert == NULL)
 			{
@@ -332,11 +324,8 @@ db_migrate(sqlite3 *db)
 			}
 
 			r = db_migrate_insert(stmt_insert, migration->name);
-			if (r != SQLITE_OK)
-			{
-				r = DB_MIGRATE_ERROR;
+			if (r != DB_MIGRATE_OK)
 				goto _done;
-			}
 		}
 	}
 
