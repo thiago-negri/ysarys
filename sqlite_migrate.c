@@ -103,7 +103,7 @@ sqlite_migrate_prepare_read(sqlite3 *db)
 
 /* ERROR | OK. OK+*ret_filename==NULL means cursor done */
 static int
-sqlite_migrate_step(sqlite3_stmt *stmt, const unsigned char **ret_filename, int *ret_size)
+sqlite_migrate_step(sqlite3_stmt *stmt, const char **ret_filename, int *ret_size)
 {
 	int r = 0;
 
@@ -116,7 +116,7 @@ sqlite_migrate_step(sqlite3_stmt *stmt, const unsigned char **ret_filename, int 
 			return SQLITE_MIGRATE_OK;
 
 		case SQLITE_ROW:
-			*ret_filename = sqlite3_column_text(stmt, 0);
+			*ret_filename = (const char *)sqlite3_column_text(stmt, 0);
 			*ret_size = sqlite3_column_bytes(stmt, 0);
 			return SQLITE_MIGRATE_OK;
 
@@ -131,7 +131,7 @@ sqlite_migrate(sqlite3 *db)
 {
 	sqlite3_stmt *stmt_read = NULL;
 	sqlite3_stmt *stmt_insert = NULL;
-	const unsigned char *filename = NULL;
+	const char *filename = NULL;
 	const char *migration_filename = NULL;
 	dir_handle *dir_handle = NULL;
 	int filename_size = 0;

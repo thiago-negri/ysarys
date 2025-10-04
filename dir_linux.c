@@ -69,7 +69,7 @@ dir_first(const char *path, const char **ret_filename)
 					return handle;
 
 				default:
-					// We don't care.
+					/* We don't care. */
 					break;
 			}
 		}
@@ -131,7 +131,7 @@ dir_next(dir_handle *opaque_handle, const char **ret_filename)
 					return DIR_OK;
 
 				default:
-					// We don't care.
+					/* We don't care. */
 					break;
 			}
 		}
