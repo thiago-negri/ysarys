@@ -265,7 +265,6 @@ db_migrate(sqlite3 *db)
 	switch (r)
 	{
 		case DB_MIGRATE_ERROR:
-			r = DB_MIGRATE_ERROR;
 			goto _done;
 
 		case DB_MIGRATE_DOESNT_EXIST:
