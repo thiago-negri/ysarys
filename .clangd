@@ -1,4 +1,4 @@
 CompileFlags:
-  Add: [-std=c99]
+  Add: [-std=c89]
 Completion:
   ArgumentLists: None

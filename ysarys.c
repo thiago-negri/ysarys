@@ -1,4 +1,4 @@
-#include "sqlite_migrate.h"
+#include "db_migrate.h"
 #include <sqlite3.h>
 #include <stdio.h>
 
@@ -45,8 +45,8 @@ main(int argc, const char *argv[])
 		goto _done;
 	}
 
-	r = sqlite_migrate(db);
-	if (r != SQLITE_MIGRATE_OK)
+	r = db_migrate(db);
+	if (r != DB_MIGRATE_OK)
 	{
 		sqlite_print_error(db, "sqlite_migrate");
 		r = -1;
