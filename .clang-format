@@ -39,8 +39,8 @@ BraceWrapping:
 Cpp11BracedListStyle: false
 IncludeBlocks: Preserve
 ColumnLimit: 120
-IndentWidth: 8
-ContinuationIndentWidth: 8
+IndentWidth: 2
+ContinuationIndentWidth: 4
 IndentCaseLabels: true
 IndentCaseBlocks: true
 IndentGotoLabels: true
@@ -58,5 +58,5 @@ SpaceInEmptyBlock: false
 SpaceInEmptyParentheses: false
 AlignAfterOpenBracket: Align
 UseCRLF: false
-UseTab: ForIndentation
+UseTab: Never
 ---

@@ -3,6 +3,5 @@ root = true
 [*]
 end_of_line = lf
 insert_final_newline = true
+indent_style = space
 
-[*.{h,c,sh}]
-indent_style = tab
