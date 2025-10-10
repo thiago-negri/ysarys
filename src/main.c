@@ -70,44 +70,72 @@ _done:
   return last_run;
 }
 
-long
-select_count_scheduler(sqlite3 *db)
+int
+select_scheduler(sqlite3 *db, sqlite3_stmt **stmt)
 {
-  sqlite3_stmt *stmt = NULL;
-  const char sql[] = "SELECT COUNT(1) FROM scheduler";
+  const char sql[] = "SELECT id, rule, description, tags_csv, monetary_value FROM scheduler";
   int r = 0;
-  int count = 0;
 
-  r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
+  r = sqlite3_prepare_v2(db, sql, sizeof(sql), stmt, NULL);
   if (r != SQLITE_OK)
   {
-    sqlite_print_error(db, "select_count_scheduler.prepare");
-    count = 0;
+    sqlite_print_error(db, "select_scheduler.prepare");
+    if (*stmt != NULL)
+      sqlite3_finalize(*stmt);
+
+    r = YSARYS_ERROR;
     goto _done;
   }
 
-  r = sqlite3_step(stmt);
-  switch (r)
-  {
-    case SQLITE_DONE:
-      count = 0;
-      goto _done;
-
-    case SQLITE_ROW:
-      count = sqlite3_column_int(stmt, 0);
-      goto _done;
-
-    default:
-      sqlite_print_error(db, "select_count_scheduler.step");
-      count = 0;
-      goto _done;
-  }
-
+  r = YSARYS_OK;
 _done:
-  if (stmt != NULL)
-    sqlite3_finalize(stmt);
+  return r;
+}
 
-  return count;
+void
+next(struct date *date)
+{
+  date->week_day = (date->week_day + 1) % 7;
+
+  if (date->day < month_last_day(date->year, date->month))
+  {
+    date->day += 1;
+    return;
+  }
+  date->day = 1;
+
+  if (date->month < MONTH_DECEMBER)
+  {
+    date->month = date->month + 1;
+    return;
+  }
+  date->month = MONTH_JANUARY;
+
+  date->year += 1;
+}
+
+int
+compare(struct date *a, struct date *b)
+{
+  if (a->year < b->year)
+    return -1;
+
+  if (a->year > b->year)
+    return 1;
+
+  if (a->month < b->month)
+    return -1;
+
+  if (a->month > b->month)
+    return 1;
+
+  if (a->day < b->day)
+    return -1;
+
+  if (a->day > b->day)
+    return 1;
+
+  return 0;
 }
 
 int
@@ -116,8 +144,15 @@ scheduler_populate(sqlite3 *db, struct date *today)
   struct date check_start_data = DATE_ZERO;
   struct date *check_start = NULL;
   struct date check_end = DATE_ZERO;
-  int rules_count = 0;
+  struct date current = DATE_ZERO;
+  sqlite3_stmt *stmt_scheduler = NULL;
   sqlite3_int64 last_run = 0;
+  sqlite3_int64 scheduler_id = 0;
+  const unsigned char *scheduler_rule = NULL;
+  const unsigned char *scheduler_description = NULL;
+  const unsigned char *scheduler_tags_csv = NULL;
+  sqlite3_int64 scheduler_monetary_value = 0;
+  int r = 0;
 
   last_run = select_last_run_time(db);
   if (last_run != 0)
@@ -130,10 +165,41 @@ scheduler_populate(sqlite3 *db, struct date *today)
 
   date_add_days(today, 60, &check_end);
 
-  rules_count = select_count_scheduler(db);
+  r = select_scheduler(db, &stmt_scheduler);
+  if (r != YSARYS_OK)
+    goto _done;
+
+  while ((r = sqlite3_step(stmt_scheduler)) == SQLITE_ROW)
+  {
+    scheduler_id = sqlite3_column_int64(stmt_scheduler, 0);
+    scheduler_rule = sqlite3_column_text(stmt_scheduler, 1);
+    scheduler_description = sqlite3_column_text(stmt_scheduler, 2);
+    scheduler_tags_csv = sqlite3_column_text(stmt_scheduler, 3);
+    scheduler_monetary_value = sqlite3_column_int64(stmt_scheduler, 4);
+
+    printf("Scheduler %lld: (%s) '%s' [%s] $%lld\n", scheduler_id, scheduler_rule, scheduler_description,
+           scheduler_tags_csv, scheduler_monetary_value);
+
+    for (current = *check_start; compare(&current, &check_end) <= 0; next(&current))
+    {
+      if (matches(scheduler_rule, &current))
+      {
+        if (!exists(db, scheduler_id, &current))
+        {
+          agenda_insert(db, scheduler..., &current);
+        }
+      }
+    }
+  }
+
+  update_last_run_time(db, &check_end);
 
   /* TODO: Continue... */
-  return 0;
+  r = YSARYS_OK;
+_done:
+  if (stmt_scheduler != NULL)
+    sqlite3_finalize(stmt_scheduler);
+  return r;
 }
 
 int
@@ -160,9 +226,11 @@ run(sqlite3 *db)
   if (r != YSARYS_OK)
     goto _done;
 
+  /*
   r = agenda_list_due(db, &today, &near_future_ref_date, &future_ref_date);
   if (r != YSARYS_OK)
     goto _done;
+    */
 
   r = YSARYS_OK;
 _done:

@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 OBJ_DIR=.o.d
 APP_DIR=dist
 
-run() { echo $@; $@; }
+run() { echo "$@"; command $@; }
 
 run rm -rf "$OBJ_DIR" "$APP_DIR"
