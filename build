@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 APP=ysarys
 CC=cc
@@ -8,14 +8,15 @@ SRC_DIR=src
 OBJ_DIR=.o.d
 APP_DIR=dist
 
-run() { echo $@; $@; }
+run() { echo "$@"; command $@; }
+cc() { run "$CC" $@; }
 
 mkdir -p "$OBJ_DIR"
 for src in "$SRC_DIR"/*.c; do
-    c="${src#src/}"
-    o="${c//.c/.o}"
-    run "$CC" $CFLAGS -c "$src" -o "$OBJ_DIR/$o"
+  c="${src#src/}"
+  o="${c%.c}.o"
+  cc $CFLAGS -c "$src" -o "$OBJ_DIR/$o"
 done
 
 mkdir -p "$APP_DIR"
-run "$CC" "$OBJ_DIR"/*.o $LDFLAGS -o "$APP_DIR/$APP"
+cc "$OBJ_DIR"/*.o $LDFLAGS -o "$APP_DIR/$APP"
