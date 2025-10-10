@@ -161,7 +161,7 @@ db_migrate_apply(sqlite3 *db, const char *sql)
       r = DB_MIGRATE_ERROR;
       goto _done;
     }
-    log_debug("DB_MIGRATE: %.*s\n", next_sql - current_sql, current_sql);
+    log_debug("DB_MIGRATE: %.*s", next_sql - current_sql, current_sql);
     sql_size -= next_sql - current_sql;
     current_sql = next_sql;
 

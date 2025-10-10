@@ -1,6 +1,7 @@
 #include "../lib/date.h"
 #include "../lib/db_migrate.h"
 #include "../lib/intdef.h"
+#include "../lib/log.h"
 #include "../lib/rule.h"
 #include <sqlite3.h>
 #include <stdio.h>
@@ -183,22 +184,19 @@ scheduler_populate(sqlite3 *db, struct date *today)
     scheduler_monetary_value = sqlite3_column_int64(stmt_scheduler, 4);
 
     r = rule_compile(scheduler_rule, scheduler_rule_count, &rule);
-    if (r != 0)
+    if (r != RULE_OK)
     {
+      log_error("Failed to compile rule '%s'. Return code: %d", scheduler_rule, r);
       r = YSARYS_ERROR;
       goto _done;
     }
-
-    /*
-    printf("Scheduler %lld: (%s) '%s' [%s] $%lld\n", scheduler_id, scheduler_rule, scheduler_description,
-           scheduler_tags_csv, scheduler_monetary_value);
-           */
 
     for (current = *check_start; compare(&current, &check_end) <= 0; next(&current))
     {
       if (rule_matches(rule, &current))
       {
-        printf("%d-%d-%d: %s\n", current.year, current.month, current.day, scheduler_description);
+        printf("%d-%d-%d %lld: (%s) '%s' [%s] $%lld\n", current.year, current.month, current.day, scheduler_id,
+               scheduler_rule, scheduler_description, scheduler_tags_csv, scheduler_monetary_value);
         /*
          if (!exists(db, scheduler_id, &current))
          {
@@ -213,7 +211,6 @@ scheduler_populate(sqlite3 *db, struct date *today)
 
   /* update_last_run_time(db, &check_end); */
 
-  /* TODO: Continue... */
   r = YSARYS_OK;
 _done:
   if (stmt_scheduler != NULL)
