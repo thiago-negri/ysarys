@@ -1,2 +1,4 @@
-/.o.d/
-/dist/
+/.lib_obj/
+/.test_dist/
+/app_dist/
+test.db

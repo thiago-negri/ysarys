@@ -21,7 +21,7 @@ enum
 
 enum
 {
-  WEEK_DAY_SUNDAY = 0,
+  WEEK_DAY_SUNDAY = 1,
   WEEK_DAY_MONDAY,
   WEEK_DAY_TUESDAY,
   WEEK_DAY_WEDNESDAY,
@@ -42,6 +42,8 @@ struct date
 
 void date_from_time(time_t time, struct date *ret_date);
 void date_add_days(struct date *date, int days, struct date *ret_date);
+int date_negative_day(struct date *date);
+int date_compare(struct date *a, struct date *b);
 
 const char *week_day_string(int week_day);
 

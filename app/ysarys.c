@@ -1,6 +1,7 @@
-#include "date.h"
-#include "db_migrate.h"
-#include "intdef.h"
+#include "../lib/date.h"
+#include "../lib/db_migrate.h"
+#include "../lib/intdef.h"
+#include "../lib/rule.h"
 #include <sqlite3.h>
 #include <stdio.h>
 #include <string.h>
@@ -141,7 +142,7 @@ compare(struct date *a, struct date *b)
 int
 scheduler_populate(sqlite3 *db, struct date *today)
 {
-  struct date check_start_data = DATE_ZERO;
+  struct date check_start_date = DATE_ZERO;
   struct date *check_start = NULL;
   struct date check_end = DATE_ZERO;
   struct date current = DATE_ZERO;
@@ -149,19 +150,22 @@ scheduler_populate(sqlite3 *db, struct date *today)
   sqlite3_int64 last_run = 0;
   sqlite3_int64 scheduler_id = 0;
   const unsigned char *scheduler_rule = NULL;
+  int scheduler_rule_count = 0;
   const unsigned char *scheduler_description = NULL;
   const unsigned char *scheduler_tags_csv = NULL;
   sqlite3_int64 scheduler_monetary_value = 0;
+  struct rule *rule;
   int r = 0;
+
+  check_start = today;
 
   last_run = select_last_run_time(db);
   if (last_run != 0)
   {
-    date_from_time(last_run, &check_start_data);
-    check_start = &check_start_data;
+    date_from_time(last_run, &check_start_date);
+    if (date_compare(&check_start_date, today) < 0)
+      check_start = &check_start_date;
   }
-  else
-    check_start = today;
 
   date_add_days(today, 60, &check_end);
 
@@ -173,26 +177,41 @@ scheduler_populate(sqlite3 *db, struct date *today)
   {
     scheduler_id = sqlite3_column_int64(stmt_scheduler, 0);
     scheduler_rule = sqlite3_column_text(stmt_scheduler, 1);
+    scheduler_rule_count = sqlite3_column_bytes(stmt_scheduler, 1);
     scheduler_description = sqlite3_column_text(stmt_scheduler, 2);
     scheduler_tags_csv = sqlite3_column_text(stmt_scheduler, 3);
     scheduler_monetary_value = sqlite3_column_int64(stmt_scheduler, 4);
 
+    r = rule_compile(scheduler_rule, scheduler_rule_count, &rule);
+    if (r != 0)
+    {
+      r = YSARYS_ERROR;
+      goto _done;
+    }
+
+    /*
     printf("Scheduler %lld: (%s) '%s' [%s] $%lld\n", scheduler_id, scheduler_rule, scheduler_description,
            scheduler_tags_csv, scheduler_monetary_value);
+           */
 
     for (current = *check_start; compare(&current, &check_end) <= 0; next(&current))
     {
-      if (matches(scheduler_rule, &current))
+      if (rule_matches(rule, &current))
       {
-        if (!exists(db, scheduler_id, &current))
-        {
-          agenda_insert(db, scheduler..., &current);
-        }
+        printf("%d-%d-%d: %s\n", current.year, current.month, current.day, scheduler_description);
+        /*
+         if (!exists(db, scheduler_id, &current))
+         {
+           agenda_insert(db, scheduler..., &current);
+         }
+         */
       }
     }
+
+    rule_free(rule);
   }
 
-  update_last_run_time(db, &check_end);
+  /* update_last_run_time(db, &check_end); */
 
   /* TODO: Continue... */
   r = YSARYS_OK;

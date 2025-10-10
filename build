@@ -1,22 +1,17 @@
 #!/bin/sh
 
-APP=ysarys
-CC=cc
-CFLAGS=$(cat compile_flags.txt)
-LDFLAGS=-lsqlite3
-SRC_DIR=src
-OBJ_DIR=.o.d
-APP_DIR=dist
+. "${0%/*}/.env"
 
-run() { echo "$@"; command $@; }
-cc() { run "$CC" $@; }
-
-mkdir -p "$OBJ_DIR"
-for src in "$SRC_DIR"/*.c; do
-  c="${src#src/}"
+mkdir -p "$LIB_OBJ_DIR"
+for src in "$LIB_SRC_DIR"/*.c; do
+  c="${src#$LIB_SRC_DIR/}"
   o="${c%.c}.o"
-  cc $CFLAGS -c "$src" -o "$OBJ_DIR/$o"
+  cc $CFLAGS -c "$src" -o "$LIB_OBJ_DIR/$o" || exit 1
 done
 
-mkdir -p "$APP_DIR"
-cc "$OBJ_DIR"/*.o $LDFLAGS -o "$APP_DIR/$APP"
+mkdir -p "$APP_DIST_DIR"
+for src in "$APP_SRC_DIR"/*.c; do
+  c="${src#$APP_SRC_DIR/}"
+  app="${c%.c}"
+  cc $CFLAGS "$LIB_OBJ_DIR"/*.o "$src" $LDFLAGS -o "$APP_DIST_DIR/$app" || exit 1
+done

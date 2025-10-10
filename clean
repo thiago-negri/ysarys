@@ -1,8 +1,5 @@
 #!/bin/sh
 
-OBJ_DIR=.o.d
-APP_DIR=dist
+. "${0%/*}/.env"
 
-run() { echo "$@"; command $@; }
-
-run rm -rf "$OBJ_DIR" "$APP_DIR"
+run rm -rf "$LIB_OBJ_DIR" "$LIB_TEST_DIST_DIR" "$APP_DIST_DIR" 

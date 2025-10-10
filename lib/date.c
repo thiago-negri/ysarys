@@ -62,6 +62,33 @@ date_add_days(struct date *date, int days, struct date *ret_date)
   ret_date->week_day = new_week_day;
 }
 
+int
+date_negative_day(struct date *date)
+{
+  return date->day - month_last_day(date->year, date->month) - 1;
+}
+
+int
+date_compare(struct date *a, struct date *b)
+{
+  if (a->year < b->year)
+    return -1;
+  if (a->year > b->year)
+    return 1;
+
+  if (a->month < b->month)
+    return -1;
+  if (a->month > b->month)
+    return 1;
+
+  if (a->day < b->day)
+    return -1;
+  if (a->day > b->day)
+    return 1;
+
+  return 0;
+}
+
 const char *
 week_day_string(int week_day)
 {

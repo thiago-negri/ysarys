@@ -1,0 +1,11 @@
+#!/bin/sh
+
+. "${0%/*}/.env"
+
+mkdir -p "$LIB_TEST_DIST_DIR"
+for src in "$LIB_TEST_DIR"/*.c; do
+  c="${src#$LIB_TEST_DIR/}"
+  test="${c%.c}"
+  cc $CFLAGS $LDFLAGS "$LIB_OBJ_DIR"/*.o "$src" -o "$LIB_TEST_DIST_DIR/$test" || exit 1
+  run "./$LIB_TEST_DIST_DIR/$test" || exit 1
+done
