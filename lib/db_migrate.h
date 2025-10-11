@@ -5,8 +5,8 @@
 
 enum
 {
-  DB_MIGRATE_OK = 0,
-  DB_MIGRATE_E
+	DB_MIGRATE_OK = 0,
+	DB_MIGRATE_E
 };
 
 /* ERROR | OK */

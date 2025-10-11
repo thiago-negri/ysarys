@@ -2,7 +2,7 @@
 #define INTDEF_H
 
 #define STATIC_ASSERT_SIZE(type, size)                                                                                 \
-  static char __static_assert_##type_has_size_##size[(sizeof(type) == size ? 1 : -1)]
+	static char __static_assert_##type_has_size_##size[(sizeof(type) == size ? 1 : -1)]
 
 #ifndef TYPE_I8
 #define TYPE_I8 char

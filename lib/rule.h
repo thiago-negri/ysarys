@@ -6,53 +6,53 @@
 
 enum
 {
-  RULE_OK = 0,
-  RULE_EINVALNUM,
-  RULE_EOOM
+	RULE_OK = 0,
+	RULE_EINVALNUM,
+	RULE_EOOM
 };
 
 enum
 {
-  MATCHER_TYPE_ALL = 0,
-  MATCHER_TYPE_SIMPLE,
-  MATCHER_TYPE_RANGE,
-  MATCHER_TYPE_MULTI
+	MATCHER_TYPE_ALL = 0,
+	MATCHER_TYPE_SIMPLE,
+	MATCHER_TYPE_RANGE,
+	MATCHER_TYPE_MULTI
 };
 
 struct matcher_simple
 {
-  int value;
+	int value;
 };
 
 struct matcher_range
 {
-  int from;
-  int to;
+	int from;
+	int to;
 };
 
 struct matcher_multi
 {
-  int count;
-  struct matcher *array;
+	int count;
+	struct matcher *array;
 };
 
 struct matcher
 {
-  int type;
-  union
-  {
-    struct matcher_simple simple;
-    struct matcher_range range;
-    struct matcher_multi multi;
-  } data;
+	int type;
+	union
+	{
+		struct matcher_simple simple;
+		struct matcher_range range;
+		struct matcher_multi multi;
+	} data;
 };
 
 struct rule
 {
-  struct matcher year;
-  struct matcher month;
-  struct matcher day;
-  struct matcher week_day;
+	struct matcher year;
+	struct matcher month;
+	struct matcher day;
+	struct matcher week_day;
 };
 
 int rule_compile(const unsigned char *input, usize input_count, struct rule **ret_rule);

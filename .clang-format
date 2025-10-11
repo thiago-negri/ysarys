@@ -10,10 +10,10 @@ InsertBraces: false
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortEnumsOnASingleLine: false
-AllowShortBlocksOnASingleLine: Always
+AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: false
-AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: All
 AlwaysBreakAfterReturnType: None
@@ -38,8 +38,8 @@ BraceWrapping:
   SplitEmptyRecord: true
 Cpp11BracedListStyle: false
 IncludeBlocks: Preserve
-ColumnLimit: 120
-IndentWidth: 2
+ColumnLimit: 80
+IndentWidth: 8
 ContinuationIndentWidth: 4
 IndentCaseLabels: true
 IndentCaseBlocks: true
@@ -58,5 +58,5 @@ SpaceInEmptyBlock: false
 SpaceInEmptyParentheses: false
 AlignAfterOpenBracket: Align
 UseCRLF: false
-UseTab: Never
+UseTab: ForIndentation
 ---

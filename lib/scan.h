@@ -3,8 +3,8 @@
 
 enum
 {
-  SCAN_OK,
-  SCAN_EINVAL
+	SCAN_OK,
+	SCAN_EINVAL
 };
 
 int scan_int(const unsigned char *input, int count, int *ret_value);
