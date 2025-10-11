@@ -1,0 +1,4 @@
+#1 Change timestamps to YMD triplets
+
+Stop using int64 for timestamps. Agenda entries only care about the Date part, so store everything as YMD instead of
+Timestamps.

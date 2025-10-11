@@ -1,6 +1,7 @@
 #ifndef DATE_H
 #define DATE_H
 
+#include <stdio.h>
 #include <time.h>
 
 enum
@@ -46,6 +47,7 @@ time_t date_to_time(struct date *date);
 void date_add_days(struct date *date, int days, struct date *ret_date);
 int date_negative_day(struct date *date);
 int date_compare(struct date *a, struct date *b);
+void fprintf_date(FILE *fd, struct date *date);
 
 const char *week_day_string(int week_day);
 

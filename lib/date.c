@@ -158,3 +158,17 @@ month_last_day(int year, int month)
 
   return -1;
 }
+
+void
+fprintf_date(FILE *fd, struct date *date)
+{
+  fprintf(fd, "%d-", date->year);
+  if (date->month < 10)
+    fprintf(fd, "0%d-", date->month);
+  else
+    fprintf(fd, "%d-", date->month);
+  if (date->day < 10)
+    fprintf(fd, "0%d", date->day);
+  else
+    fprintf(fd, "%d", date->day);
+}

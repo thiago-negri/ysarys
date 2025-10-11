@@ -222,6 +222,48 @@ _done:
 }
 
 int
+update_last_run(sqlite3 *db, struct date *date)
+{
+  sqlite3_stmt *stmt = NULL;
+  const char sql[] = "REPLACE INTO scheduler_control (id, last_run_at_timestamp) VALUES (1, ?)";
+  int r = 0;
+
+  r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "update_last_run.prepare");
+    r = YSARYS_ERROR;
+    goto _done;
+  }
+
+  r = sqlite3_bind_int64(stmt, 1, date_to_time(date));
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "update_last_run.bind");
+    r = YSARYS_ERROR;
+    goto _done;
+  }
+
+  r = sqlite3_step(stmt);
+  switch (r)
+  {
+    case SQLITE_DONE:
+      r = YSARYS_OK;
+      goto _done;
+
+    default:
+      sqlite_print_error(db, "update_last_run.step");
+      r = YSARYS_ERROR;
+      goto _done;
+  }
+
+  r = YSARYS_OK;
+_done:
+  if (stmt != NULL) sqlite3_finalize(stmt);
+  return r;
+}
+
+int
 scheduler_populate(sqlite3 *db, struct date *today)
 {
   struct date check_start_date = DATE_ZERO;
@@ -285,8 +327,10 @@ scheduler_populate(sqlite3 *db, struct date *today)
         r = agenda_exists(db, scheduler_id, due_at, &exists);
         if (r != YSARYS_OK) goto _done;
 
+        /*
         printf("%d-%d-%d <%d> %lld: (%s) '%s' [%s] $%lld\n", current.year, current.month, current.day, exists,
                scheduler_id, scheduler_rule, scheduler_description, scheduler_tags_csv, scheduler_monetary_value);
+               */
 
         if (!exists)
         {
@@ -300,11 +344,78 @@ scheduler_populate(sqlite3 *db, struct date *today)
     rule_free(rule);
   }
 
-  /* TODO(tnegri): update_last_run_time(db, &check_end); */
+  r = update_last_run(db, &check_end);
+  if (r != YSARYS_OK) goto _done;
 
   r = YSARYS_OK;
 _done:
   if (stmt_scheduler != NULL) sqlite3_finalize(stmt_scheduler);
+  return r;
+}
+
+static int
+agenda_list_due(sqlite3 *db, struct date *today, struct date *near_future, struct date *future)
+{
+  sqlite3_stmt *stmt = NULL;
+  const char sql[] = "SELECT id, scheduler_id, scheduler_archive_id, description, tags_csv, monetary_value, due_at"
+                     " FROM agenda ORDER BY due_at DESC, id DESC";
+  sqlite_int64 agenda_id = 0;
+  const unsigned char *agenda_description = NULL;
+  sqlite_int64 agenda_due_at = 0;
+  struct date date = DATE_ZERO;
+  int print_details = 0;
+  int r = 0;
+
+  r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "agenda_list_due.prepate");
+    r = YSARYS_ERROR;
+    goto _done;
+  }
+
+  while ((r = sqlite3_step(stmt)) == SQLITE_ROW)
+  {
+    agenda_id = sqlite3_column_int64(stmt, 0);
+    agenda_description = sqlite3_column_text(stmt, 3);
+    agenda_due_at = sqlite3_column_int64(stmt, 6);
+
+    print_details = 0;
+
+    date_from_time(agenda_due_at, &date);
+    if (date_compare(today, &date) >= 0)
+    {
+      fprintf(stdout, "\x001b[31mDue      -- ");
+      print_details = 1;
+    }
+    else if (date_compare(near_future, &date) >= 0)
+    {
+      fprintf(stdout, "\x001b[33mSoon     -- ");
+      print_details = 1;
+    }
+    else if (date_compare(future, &date) >= 0)
+    {
+      fprintf(stdout, "\x001b[32mUpcoming -- ");
+      print_details = 1;
+    }
+
+    if (print_details)
+    {
+      fprintf_date(stdout, &date);
+      fprintf(stdout, "  %llu   %s\x001b[0m\n", agenda_id, agenda_description);
+    }
+  }
+
+  if (r != SQLITE_DONE)
+  {
+    sqlite_print_error(db, "agenda_list_due.step");
+    r = YSARYS_ERROR;
+    goto _done;
+  }
+
+  r = YSARYS_OK;
+_done:
+  if (stmt != NULL) sqlite3_finalize(stmt);
   return r;
 }
 
@@ -331,10 +442,8 @@ run(sqlite3 *db)
   r = scheduler_populate(db, &today);
   if (r != YSARYS_OK) goto _done;
 
-  /* TODO(tnegri):
   r = agenda_list_due(db, &today, &near_future_ref_date, &future_ref_date);
   if (r != YSARYS_OK) goto _done;
-  */
 
   r = YSARYS_OK;
 _done:
