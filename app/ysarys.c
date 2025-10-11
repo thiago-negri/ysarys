@@ -140,6 +140,62 @@ compare(struct date *a, struct date *b)
   return 0;
 }
 
+static int
+agenda_exists(sqlite3 *db, sqlite_int64 scheduler_id, sqlite_int64 due_at, int *ret_exists)
+{
+  sqlite3_stmt *stmt = NULL;
+  const char sql[] = "SELECT 1 FROM agenda WHERE scheduler_id = ? AND due_at = ? LIMIT 1";
+  int r = 0;
+
+  r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "select_last_run_time.prepare");
+    r = YSARYS_ERROR;
+    goto _done;
+  }
+
+  r = sqlite3_bind_int64(stmt, 1, scheduler_id);
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "select_last_run_time.bind(scheduler_id)");
+    r = YSARYS_ERROR;
+    goto _done;
+  }
+
+  r = sqlite3_bind_int64(stmt, 2, due_at);
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "select_last_run_time.bind(due_at)");
+    r = YSARYS_ERROR;
+    goto _done;
+  }
+
+  r = sqlite3_step(stmt);
+  switch (r)
+  {
+    case SQLITE_DONE:
+      *ret_exists = 0;
+      r = YSARYS_OK;
+      goto _done;
+
+    case SQLITE_ROW:
+      *ret_exists = 1;
+      r = YSARYS_OK;
+      goto _done;
+
+    default:
+      sqlite_print_error(db, "select_last_run_time.step");
+      r = YSARYS_ERROR;
+      goto _done;
+  }
+
+_done:
+  if (stmt != NULL)
+    sqlite3_finalize(stmt);
+  return r;
+}
+
 int
 scheduler_populate(sqlite3 *db, struct date *today)
 {
@@ -156,6 +212,7 @@ scheduler_populate(sqlite3 *db, struct date *today)
   const unsigned char *scheduler_tags_csv = NULL;
   sqlite3_int64 scheduler_monetary_value = 0;
   struct rule *rule;
+  int exists = 0;
   int r = 0;
 
   check_start = today;
@@ -195,14 +252,21 @@ scheduler_populate(sqlite3 *db, struct date *today)
     {
       if (rule_matches(rule, &current))
       {
-        printf("%d-%d-%d %lld: (%s) '%s' [%s] $%lld\n", current.year, current.month, current.day, scheduler_id,
-               scheduler_rule, scheduler_description, scheduler_tags_csv, scheduler_monetary_value);
-        /*
-         if (!exists(db, scheduler_id, &current))
-         {
-           agenda_insert(db, scheduler..., &current);
-         }
-         */
+        r = agenda_exists(db, scheduler_id, date_to_time(&current), &exists);
+        if (r != YSARYS_OK)
+        {
+          sqlite_print_error(db, "agenda_exists");
+          r = YSARYS_ERROR;
+          goto _done;
+        }
+
+        printf("%d-%d-%d <%d> %lld: (%s) '%s' [%s] $%lld\n", current.year, current.month, current.day, exists,
+               scheduler_id, scheduler_rule, scheduler_description, scheduler_tags_csv, scheduler_monetary_value);
+
+        if (!exists)
+        {
+          /* agenda_insert(db, scheduler..., &current); */
+        }
       }
     }
 

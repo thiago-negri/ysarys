@@ -41,6 +41,8 @@ struct date
 #define DATE_ZERO { 0, 0, 0, 0 }
 
 void date_from_time(time_t time, struct date *ret_date);
+time_t date_to_time(struct date *date);
+
 void date_add_days(struct date *date, int days, struct date *ret_date);
 int date_negative_day(struct date *date);
 int date_compare(struct date *a, struct date *b);

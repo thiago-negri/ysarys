@@ -5,31 +5,53 @@
 #define SECS_PER_DAY               (24 * 60 * 60)
 #define BRAZIL_TIMEZONE_IN_MINUTES (-180)
 
+/* https://howardhinnant.github.io/date_algorithms.html#civil_from_days */
 void
 date_from_time(time_t time, struct date *ret_date)
 {
-  long time_tz = time + (BRAZIL_TIMEZONE_IN_MINUTES * SECS_PER_MINUTE);
+  time_t time_tz, z, era, doe, yoe, y, doy, mp, d, m, year, month, day, week_day;
 
-  /* https://howardhinnant.github.io/date_algorithms.html#civil_from_days */
-  long z = time_tz / SECS_PER_DAY + 719468;
-  long era = ((z >= 0) ? z : z - 146096) / 146097;
-  long doe = (z - era * 146097);
-  long yoe = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365;
-  long y = yoe + era * 400;
-  long doy = doe - (365 * yoe + (yoe / 4) - (yoe / 100));
-  long mp = (5 * doy + 2) / 153;
-  long d = doy - (153 * mp + 2) / 5 + 1;
-  long m = (mp < 10) ? mp + 3 : mp - 9;
+  time_tz = time + (BRAZIL_TIMEZONE_IN_MINUTES * SECS_PER_MINUTE);
 
-  int year = (m <= 2) ? y + 1 : y;
-  int month = m;
-  int day = d;
-  int week_day = (z + 3) % 7;
+  z = time_tz / SECS_PER_DAY + 719468;
+  era = ((z >= 0) ? z : z - 146096) / 146097;
+  doe = (z - era * 146097);
+  yoe = (doe - (doe / 1460) + (doe / 36524) - (doe / 146096)) / 365;
+  y = yoe + era * 400;
+  doy = doe - (365 * yoe + (yoe / 4) - (yoe / 100));
+  mp = (5 * doy + 2) / 153;
+  d = doy - (153 * mp + 2) / 5 + 1;
+  m = (mp < 10) ? mp + 3 : mp - 9;
+
+  year = (m <= 2) ? y + 1 : y;
+  month = m;
+  day = d;
+  week_day = (z + 3) % 7;
 
   ret_date->year = year;
   ret_date->month = month;
   ret_date->day = day;
   ret_date->week_day = week_day;
+}
+
+/* https://howardhinnant.github.io/date_algorithms.html#days_from_civil */
+time_t
+date_to_time(struct date *date)
+{
+  time_t y, m, d, era, yoe, doy, doe;
+
+  y = date->year;
+  m = date->month;
+  d = date->day;
+  if (m <= 2)
+    y -= 1;
+  era = ((y >= 0) ? y : y - 399) / 400;
+  yoe = y - era * 400;
+  if (yoe < 0)
+    yoe *= -1;
+  doy = ((153 * ((m > 2) ? m - 3 : m + 9) + 2) / 5) + d - 1;
+  doe = yoe * 365 + (yoe / 4) - (yoe / 100) + doy;
+  return SECS_PER_DAY * (era * 146097 + doe - 719468);
 }
 
 void
