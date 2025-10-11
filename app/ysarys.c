@@ -3,13 +3,17 @@
 #include "../lib/intdef.h"
 #include "../lib/log.h"
 #include "../lib/rule.h"
+#include "../lib/scan.h"
 #include <sqlite3.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-#define YSARYS_OK    (0)
-#define YSARYS_ERROR (-1)
+enum
+{
+  YSARYS_OK = 0,
+  YSARYS_E
+};
 
 struct scheduler
 {
@@ -30,6 +34,173 @@ sqlite_print_error(sqlite3 *db, const char *tag)
   errmsg = sqlite3_errmsg(db);
 
   fprintf(stderr, "%s %d: %s\n", tag, errcode, errmsg);
+}
+
+void
+usage(void)
+{
+  fprintf(stderr, "Usage: ysarys <db> [command]\n");
+}
+
+static int
+agenda_list(sqlite3 *db)
+{
+  (void)db;
+  /* TODO(tnegri): agenda_list */
+  return YSARYS_E;
+}
+
+static int
+agenda_archive(sqlite3 *db, int agenda_id)
+{
+  const char sql_archive[] = "INSERT INTO agenda_archive (scheduler_id, scheduler_archive_id, description,"
+                             " tags_csv, monetary_value, due_at, archived_at)"
+                             " SELECT scheduler_id, scheduler_archive_id, description, tags_csv, monetary_value,"
+                             " due_at, ? FROM agenda"
+                             " WHERE id = ?";
+  time_t archived_at = 0;
+  sqlite3_stmt *stmt = NULL;
+  int r = 0;
+
+  archived_at = time(NULL);
+  if (archived_at == ((time_t)-1))
+  {
+    r = YSARYS_E;
+    goto _done;
+  }
+
+  r = sqlite3_prepare_v2(db, sql_archive, sizeof(sql_archive), &stmt, NULL);
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "agenda_archive.prepare");
+    r = YSARYS_E;
+    goto _done;
+  }
+
+  r = sqlite3_bind_int64(stmt, 1, archived_at);
+  if (r == SQLITE_OK) r = sqlite3_bind_int(stmt, 2, agenda_id);
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "agenda_archive.bind");
+    r = YSARYS_E;
+    goto _done;
+  }
+
+  r = sqlite3_step(stmt);
+  if (r != SQLITE_DONE)
+  {
+    sqlite_print_error(db, "agenda_archive.step");
+    r = YSARYS_E;
+    goto _done;
+  }
+
+  r = YSARYS_OK;
+_done:
+  if (stmt != NULL) sqlite3_finalize(stmt);
+  return r;
+}
+
+static int
+agenda_delete(sqlite3 *db, int agenda_id)
+{
+  const char sql_delete[] = "DELETE FROM agenda WHERE id = ?";
+  sqlite3_stmt *stmt = NULL;
+  int r = 0;
+
+  r = sqlite3_prepare_v2(db, sql_delete, sizeof(sql_delete), &stmt, NULL);
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "agenda_delete.prepare");
+    r = YSARYS_E;
+    goto _done;
+  }
+
+  r = sqlite3_bind_int(stmt, 1, agenda_id);
+  if (r != SQLITE_OK)
+  {
+    sqlite_print_error(db, "agenda_delete.bind");
+    r = YSARYS_E;
+    goto _done;
+  }
+
+  r = sqlite3_step(stmt);
+  if (r != SQLITE_DONE)
+  {
+    sqlite_print_error(db, "agenda_delete.step");
+    r = YSARYS_E;
+    goto _done;
+  }
+
+  r = YSARYS_OK;
+_done:
+  if (stmt != NULL) sqlite3_finalize(stmt);
+  return r;
+}
+
+static int
+agenda_rm(sqlite3 *db, int argc, const char *argv[])
+{
+  int agenda_id = 0;
+  int r = 0;
+
+  if (argc != 1)
+  {
+    r = YSARYS_E;
+    goto _done;
+  }
+
+  r = scan_int((const unsigned char *)argv[0], strlen(argv[0]), &agenda_id);
+  if (r != SCAN_OK)
+  {
+    r = YSARYS_E;
+    goto _done;
+  }
+
+  r = agenda_archive(db, agenda_id);
+  if (r == YSARYS_OK) r = agenda_delete(db, agenda_id);
+  if (r != YSARYS_OK) goto _done;
+
+  r = YSARYS_OK;
+_done:
+  return YSARYS_E;
+}
+
+static int
+agenda_add(sqlite3 *db, int argc, const char *argv[])
+{
+  (void)db;
+  (void)argc;
+  (void)argv;
+  /* TODO(tnegri): agenda_add */
+  return YSARYS_E;
+}
+
+static int
+scheduler_list(sqlite3 *db)
+{
+  (void)db;
+  /* TODO(tnegri): scheduler_list */
+  return YSARYS_E;
+}
+
+static int
+scheduler_rm(sqlite3 *db, int argc, const char *argv[])
+{
+  (void)db;
+  (void)argc;
+  (void)argv;
+  /* TODO(tnegri): scheduler_rm */
+  return YSARYS_E;
+}
+
+static int
+scheduler_add(sqlite3 *db, int argc, const char *argv[])
+{
+  (void)db;
+  (void)argc;
+  (void)argv;
+  /* TODO(tnegri): scheduler_add */
+  return YSARYS_E;
 }
 
 sqlite3_int64
@@ -83,7 +254,7 @@ select_scheduler(sqlite3 *db, sqlite3_stmt **stmt)
     sqlite_print_error(db, "select_scheduler.prepare");
     if (*stmt != NULL) sqlite3_finalize(*stmt);
 
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -97,7 +268,7 @@ next(struct date *date)
 {
   date->week_day = (date->week_day + 1) % 7;
 
-  if (date->day < month_last_day(date->year, date->month))
+  if (date->day < date_month_last_day(date->year, date->month))
   {
     date->day += 1;
     return;
@@ -137,7 +308,7 @@ agenda_exists(sqlite3 *db, sqlite_int64 scheduler_id, sqlite_int64 due_at, int *
   if (r != SQLITE_OK)
   {
     sqlite_print_error(db, "agenda_exists.prepare");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -146,7 +317,7 @@ agenda_exists(sqlite3 *db, sqlite_int64 scheduler_id, sqlite_int64 due_at, int *
   if (r != SQLITE_OK)
   {
     sqlite_print_error(db, "agenda_exists.bind");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -165,7 +336,7 @@ agenda_exists(sqlite3 *db, sqlite_int64 scheduler_id, sqlite_int64 due_at, int *
 
     default:
       sqlite_print_error(db, "agenda_exists.step");
-      r = YSARYS_ERROR;
+      r = YSARYS_E;
       goto _done;
   }
 
@@ -187,7 +358,7 @@ agenda_insert(sqlite3 *db, sqlite_int64 scheduler_id, const unsigned char *descr
   if (r != SQLITE_OK)
   {
     sqlite_print_error(db, "agenda_insert.prepare");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -199,7 +370,7 @@ agenda_insert(sqlite3 *db, sqlite_int64 scheduler_id, const unsigned char *descr
   if (r != SQLITE_OK)
   {
     sqlite_print_error(db, "agenda_insert.bind");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -212,7 +383,7 @@ agenda_insert(sqlite3 *db, sqlite_int64 scheduler_id, const unsigned char *descr
 
     default:
       sqlite_print_error(db, "agenda_insert.step");
-      r = YSARYS_ERROR;
+      r = YSARYS_E;
       goto _done;
   }
 
@@ -232,7 +403,7 @@ update_last_run(sqlite3 *db, struct date *date)
   if (r != SQLITE_OK)
   {
     sqlite_print_error(db, "update_last_run.prepare");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -240,7 +411,7 @@ update_last_run(sqlite3 *db, struct date *date)
   if (r != SQLITE_OK)
   {
     sqlite_print_error(db, "update_last_run.bind");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -253,7 +424,7 @@ update_last_run(sqlite3 *db, struct date *date)
 
     default:
       sqlite_print_error(db, "update_last_run.step");
-      r = YSARYS_ERROR;
+      r = YSARYS_E;
       goto _done;
   }
 
@@ -264,7 +435,7 @@ _done:
 }
 
 int
-scheduler_populate(sqlite3 *db, struct date *today)
+scheduler_populate(sqlite3 *db, struct date *today, int populate_from_today)
 {
   struct date check_start_date = DATE_ZERO;
   struct date *check_start = NULL;
@@ -291,7 +462,7 @@ scheduler_populate(sqlite3 *db, struct date *today)
   if (last_run != 0)
   {
     date_from_time(last_run, &check_start_date);
-    if (date_compare(&check_start_date, today) < 0) check_start = &check_start_date;
+    if (!populate_from_today || date_compare(&check_start_date, today) < 0) check_start = &check_start_date;
   }
 
   date_add_days(today, 60, &check_end);
@@ -314,7 +485,7 @@ scheduler_populate(sqlite3 *db, struct date *today)
     if (r != RULE_OK)
     {
       log_error("Failed to compile rule '%s'. Return code: %d", scheduler_rule, r);
-      r = YSARYS_ERROR;
+      r = YSARYS_E;
       goto _done;
     }
 
@@ -370,7 +541,7 @@ agenda_list_due(sqlite3 *db, struct date *today, struct date *near_future, struc
   if (r != SQLITE_OK)
   {
     sqlite_print_error(db, "agenda_list_due.prepate");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -401,15 +572,15 @@ agenda_list_due(sqlite3 *db, struct date *today, struct date *near_future, struc
 
     if (print_details)
     {
-      fprintf_date(stdout, &date);
-      fprintf(stdout, "  %llu   %s\x001b[0m\n", agenda_id, agenda_description);
+      date_fprintf(stdout, &date);
+      fprintf(stdout, "  %d   %s\x001b[0m\n", (int)agenda_id, agenda_description);
     }
   }
 
   if (r != SQLITE_DONE)
   {
     sqlite_print_error(db, "agenda_list_due.step");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -420,7 +591,7 @@ _done:
 }
 
 int
-run(sqlite3 *db)
+run(sqlite3 *db, int populate_from_today)
 {
   time_t now = 0;
   struct date today = DATE_ZERO;
@@ -431,7 +602,7 @@ run(sqlite3 *db)
   now = time(NULL);
   if (now == ((time_t)-1))
   {
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -439,7 +610,7 @@ run(sqlite3 *db)
   date_add_days(&today, 7, &near_future_ref_date);
   date_add_days(&today, 15, &future_ref_date);
 
-  r = scheduler_populate(db, &today);
+  r = scheduler_populate(db, &today, populate_from_today);
   if (r != YSARYS_OK) goto _done;
 
   r = agenda_list_due(db, &today, &near_future_ref_date, &future_ref_date);
@@ -455,14 +626,15 @@ main(int argc, const char *argv[])
 {
   const char *db_filename = NULL;
   const char *command = NULL;
+  const char *sub_command = NULL;
   sqlite3 *db = NULL;
   int r = 0;
   int argi = 0;
 
   if (argc < 2)
   {
-    fprintf(stderr, "Usage: ysarys <db> [command]\n");
-    r = YSARYS_ERROR;
+    usage();
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -478,7 +650,7 @@ main(int argc, const char *argv[])
     {
       fprintf(stderr, "sqlite3_open: %d\n", r);
     }
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
@@ -486,18 +658,54 @@ main(int argc, const char *argv[])
   if (r != DB_MIGRATE_OK)
   {
     sqlite_print_error(db, "db_migrate");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
     goto _done;
   }
 
-  if (strcmp("run", command) == 0) r = run(db);
+  if (strcmp("run", command) == 0)
+    r = run(db, 0);
+  else if (strcmp("recheck", command) == 0)
+    r = run(db, 1);
+  else if (strcmp("scheduler", command) == 0)
+  {
+    sub_command = argi < argc ? argv[argi++] : "list";
+    if (strcmp("list", sub_command) == 0)
+      r = scheduler_list(db);
+    else if (strcmp("rm", sub_command) == 0)
+      r = scheduler_rm(db, argc - argi, &argv[argi]);
+    else if (strcmp("add", sub_command) == 0)
+    {
+      r = scheduler_add(db, argc - argi, &argv[argi]);
+      if (r != YSARYS_OK) goto _done;
+      r = run(db, 1);
+    }
+  }
+  else if (strcmp("agenda", command) == 0)
+  {
+    sub_command = argi < argc ? argv[argi++] : "list";
+    if (strcmp("list", sub_command) == 0)
+      r = agenda_list(db);
+    else if (strcmp("rm", sub_command) == 0)
+      r = agenda_rm(db, argc - argi, &argv[argi]);
+    else if (strcmp("add", sub_command) == 0)
+    {
+      r = agenda_add(db, argc - argi, &argv[argi]);
+      if (r != YSARYS_OK) goto _done;
+      r = run(db, 1);
+    }
+  }
+  else
+  {
+    usage();
+    r = YSARYS_E;
+    goto _done;
+  }
 
-  r = YSARYS_OK;
 _done:
   if (db != NULL && sqlite3_close(db) != SQLITE_OK)
   {
     sqlite_print_error(db, "sqlite3_close");
-    r = YSARYS_ERROR;
+    r = YSARYS_E;
   }
   return r;
 }

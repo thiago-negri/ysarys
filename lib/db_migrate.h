@@ -3,8 +3,11 @@
 
 #include <sqlite3.h>
 
-#define DB_MIGRATE_ERROR (-1)
-#define DB_MIGRATE_OK    (0)
+enum
+{
+  DB_MIGRATE_OK = 0,
+  DB_MIGRATE_E
+};
 
 /* ERROR | OK */
 int db_migrate(sqlite3 *db);

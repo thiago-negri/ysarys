@@ -65,14 +65,14 @@ date_add_days(struct date *date, int days, struct date *ret_date)
   new_week_day = new_day % 7;
   new_month = date->month;
   new_year = date->year;
-  last_day_of_month = month_last_day(new_year, new_month);
+  last_day_of_month = date_month_last_day(new_year, new_month);
   while (new_day > last_day_of_month)
   {
     new_day -= last_day_of_month;
     new_month = (new_month % 12) + 1;
     if (new_month == MONTH_JANUARY) new_year += 1;
 
-    last_day_of_month = month_last_day(new_year, new_month);
+    last_day_of_month = date_month_last_day(new_year, new_month);
   }
 
   ret_date->year = new_year;
@@ -84,7 +84,7 @@ date_add_days(struct date *date, int days, struct date *ret_date)
 int
 date_negative_day(struct date *date)
 {
-  return date->day - month_last_day(date->year, date->month) - 1;
+  return date->day - date_month_last_day(date->year, date->month) - 1;
 }
 
 int
@@ -103,7 +103,7 @@ date_compare(struct date *a, struct date *b)
 }
 
 const char *
-week_day_string(int week_day)
+date_week_day_string(int week_day)
 {
   switch (week_day)
   {
@@ -133,7 +133,7 @@ week_day_string(int week_day)
 }
 
 int
-month_last_day(int year, int month)
+date_month_last_day(int year, int month)
 {
   switch (month)
   {
@@ -160,7 +160,7 @@ month_last_day(int year, int month)
 }
 
 void
-fprintf_date(FILE *fd, struct date *date)
+date_fprintf(FILE *fd, struct date *date)
 {
   fprintf(fd, "%d-", date->year);
   if (date->month < 10)

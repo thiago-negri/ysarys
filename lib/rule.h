@@ -7,8 +7,8 @@
 enum
 {
   RULE_OK = 0,
-  RULE_INVALID_NUMBER,
-  RULE_OOM
+  RULE_EINVALNUM,
+  RULE_EOOM
 };
 
 enum

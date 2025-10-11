@@ -5,8 +5,11 @@
 #include <string.h>
 #include <time.h>
 
-#define DB_MIGRATE_EXIST        (0)
-#define DB_MIGRATE_DOESNT_EXIST (1)
+enum
+{
+  DB_MIGRATE_EXIST = 1000,
+  DB_MIGRATE_DOESNT_EXIST
+};
 
 static int
 db_migrate_order(const char *migration, const char *applied_migration)
@@ -28,7 +31,7 @@ db_migrate_table_exists(sqlite3 *db)
   r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
   if (r != SQLITE_OK)
   {
-    r = DB_MIGRATE_ERROR;
+    r = DB_MIGRATE_E;
     goto _done;
   }
 
@@ -44,7 +47,7 @@ db_migrate_table_exists(sqlite3 *db)
       goto _done;
 
     default:
-      r = DB_MIGRATE_ERROR;
+      r = DB_MIGRATE_E;
       goto _done;
   }
 
@@ -65,7 +68,7 @@ db_migrate_table_create(sqlite3 *db)
   r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
   if (r != SQLITE_OK)
   {
-    r = DB_MIGRATE_ERROR;
+    r = DB_MIGRATE_E;
     goto _done;
   }
 
@@ -77,7 +80,7 @@ db_migrate_table_create(sqlite3 *db)
       goto _done;
 
     default:
-      r = DB_MIGRATE_ERROR;
+      r = DB_MIGRATE_E;
       goto _done;
   }
 
@@ -98,7 +101,7 @@ db_migrate_prepare_read(sqlite3 *db, sqlite3_stmt **ret_stmt)
   r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
   if (r != SQLITE_OK)
   {
-    r = DB_MIGRATE_ERROR;
+    r = DB_MIGRATE_E;
     if (stmt != NULL)
     {
       sqlite3_finalize(stmt);
@@ -131,7 +134,7 @@ db_migrate_step(sqlite3_stmt *stmt, const char **ret_filename)
       return DB_MIGRATE_OK;
 
     default:
-      return DB_MIGRATE_ERROR;
+      return DB_MIGRATE_E;
   }
 }
 
@@ -155,7 +158,7 @@ db_migrate_apply(sqlite3 *db, const char *sql)
     r = sqlite3_prepare_v2(db, current_sql, sql_size, &stmt, &next_sql);
     if (r != SQLITE_OK)
     {
-      r = DB_MIGRATE_ERROR;
+      r = DB_MIGRATE_E;
       goto _done;
     }
     log_debug("DB_MIGRATE: %.*s", next_sql - current_sql, current_sql);
@@ -165,7 +168,7 @@ db_migrate_apply(sqlite3 *db, const char *sql)
     r = sqlite3_step(stmt);
     if (r != SQLITE_DONE)
     {
-      r = DB_MIGRATE_ERROR;
+      r = DB_MIGRATE_E;
       goto _done;
     }
 
@@ -191,7 +194,7 @@ db_migrate_prepare_insert(sqlite3 *db, sqlite3_stmt **ret_stmt)
   r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
   if (r != SQLITE_OK)
   {
-    r = DB_MIGRATE_ERROR;
+    r = DB_MIGRATE_E;
     if (stmt != NULL)
     {
       sqlite3_finalize(stmt);
@@ -216,27 +219,27 @@ db_migrate_insert(sqlite3_stmt *stmt, const char *migration_name)
   r = sqlite3_bind_text(stmt, 1, migration_name, strlen(migration_name), SQLITE_STATIC);
   if (r != SQLITE_OK)
   {
-    r = DB_MIGRATE_ERROR;
+    r = DB_MIGRATE_E;
     goto _done;
   }
 
   if (time(&now) == ((time_t)-1))
   {
-    r = DB_MIGRATE_ERROR;
+    r = DB_MIGRATE_E;
     goto _done;
   }
 
   r = sqlite3_bind_int64(stmt, 2, now);
   if (r != SQLITE_OK)
   {
-    r = DB_MIGRATE_ERROR;
+    r = DB_MIGRATE_E;
     goto _done;
   }
 
   r = sqlite3_step(stmt);
   if (r != SQLITE_DONE)
   {
-    r = DB_MIGRATE_ERROR;
+    r = DB_MIGRATE_E;
     goto _done;
   }
 
@@ -259,7 +262,7 @@ db_migrate(sqlite3 *db)
   r = db_migrate_table_exists(db);
   switch (r)
   {
-    case DB_MIGRATE_ERROR:
+    case DB_MIGRATE_E:
       goto _done;
 
     case DB_MIGRATE_DOESNT_EXIST:
@@ -285,7 +288,7 @@ db_migrate(sqlite3 *db)
       r = db_migrate_step(stmt_read, &applied_migration);
       if (r != DB_MIGRATE_OK)
       {
-        r = DB_MIGRATE_ERROR;
+        r = DB_MIGRATE_E;
         goto _done;
       }
       ord = db_migrate_order(migration->name, applied_migration);
@@ -308,7 +311,7 @@ db_migrate(sqlite3 *db)
         r = sqlite3_reset(stmt_insert);
         if (r != SQLITE_OK)
         {
-          r = DB_MIGRATE_ERROR;
+          r = DB_MIGRATE_E;
           goto _done;
         }
       }

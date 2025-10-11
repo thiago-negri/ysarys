@@ -1,33 +1,7 @@
 #include "rule.h"
 #include "intdef.h"
+#include "scan.h"
 #include <stdlib.h>
-
-static int
-parse_int(const unsigned char *input, usize input_count, int *ret_value)
-{
-  unsigned int result = 0;
-  int current = 0;
-  int sign = 1;
-  usize i = 0;
-
-  if (input_count > 0 && input[0] == '-')
-  {
-    sign = -1;
-    i = 1;
-  }
-
-  for (; i < input_count; i++)
-  {
-    current = input[i] - '0';
-    if (current < 0 || current > 9) return RULE_INVALID_NUMBER;
-    result *= 10;
-    result += current;
-  }
-
-  result *= sign;
-  *ret_value = result;
-  return RULE_OK;
-}
 
 static int
 matcher_compile(const unsigned char *input, usize input_count, struct matcher *ret_matcher)
@@ -72,14 +46,14 @@ matcher_compile(const unsigned char *input, usize input_count, struct matcher *r
   switch (ret_matcher->type)
   {
     case MATCHER_TYPE_SIMPLE:
-      r = parse_int(input, input_count, &ret_matcher->data.simple.value);
+      r = scan_int(input, input_count, &ret_matcher->data.simple.value);
       if (r != RULE_OK) goto _done;
       break;
 
     case MATCHER_TYPE_RANGE:
-      r = parse_int(input, range_index, &ret_matcher->data.range.from);
+      r = scan_int(input, range_index, &ret_matcher->data.range.from);
       if (r != RULE_OK) goto _done;
-      r = parse_int(&input[range_index + 1], input_count - range_index - 1, &ret_matcher->data.range.to);
+      r = scan_int(&input[range_index + 1], input_count - range_index - 1, &ret_matcher->data.range.to);
       if (r != RULE_OK) goto _done;
       break;
 
@@ -87,7 +61,7 @@ matcher_compile(const unsigned char *input, usize input_count, struct matcher *r
       matcher_array = malloc(sizeof(struct matcher) * multi_count);
       if (matcher_array == NULL)
       {
-        r = RULE_OOM;
+        r = RULE_EOOM;
         goto _done;
       }
       for (i = 0; i < input_count; i++)
@@ -153,7 +127,7 @@ rule_compile(const unsigned char *input, usize input_count, struct rule **ret_ru
   *ret_rule = malloc(sizeof(struct rule));
   if (*ret_rule == NULL)
   {
-    r = RULE_OOM;
+    r = RULE_EOOM;
     goto _done;
   }
 
@@ -227,13 +201,9 @@ void
 rule_free(struct rule *rule)
 {
   if (rule->year.type == MATCHER_TYPE_MULTI) free(rule->year.data.multi.array);
-
   if (rule->month.type == MATCHER_TYPE_MULTI) free(rule->month.data.multi.array);
-
   if (rule->day.type == MATCHER_TYPE_MULTI) free(rule->day.data.multi.array);
-
   if (rule->week_day.type == MATCHER_TYPE_MULTI) free(rule->week_day.data.multi.array);
-
   free(rule);
 }
 
@@ -242,12 +212,8 @@ int
 rule_matches(struct rule *rule, struct date *date)
 {
   if (!matcher_matches(&rule->year, date->year)) return 0;
-
   if (!matcher_matches(&rule->month, date->month)) return 0;
-
   if (!matcher_matches(&rule->day, date->day) && !matcher_matches(&rule->day, date_negative_day(date))) return 0;
-
   if (!matcher_matches(&rule->week_day, date->week_day)) return 0;
-
   return 1;
 }

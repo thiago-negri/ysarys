@@ -2,6 +2,7 @@
 #define LOG_H
 
 void log_debug(const char *format, ...);
+
 void log_error(const char *format, ...);
 
 #endif /* !LOG_H */
