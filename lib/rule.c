@@ -19,8 +19,7 @@ parse_int(const unsigned char *input, usize input_count, int *ret_value)
   for (; i < input_count; i++)
   {
     current = input[i] - '0';
-    if (current < 0 || current > 9)
-      return RULE_INVALID_NUMBER;
+    if (current < 0 || current > 9) return RULE_INVALID_NUMBER;
     result *= 10;
     result += current;
   }
@@ -74,17 +73,14 @@ matcher_compile(const unsigned char *input, usize input_count, struct matcher *r
   {
     case MATCHER_TYPE_SIMPLE:
       r = parse_int(input, input_count, &ret_matcher->data.simple.value);
-      if (r != RULE_OK)
-        goto _done;
+      if (r != RULE_OK) goto _done;
       break;
 
     case MATCHER_TYPE_RANGE:
       r = parse_int(input, range_index, &ret_matcher->data.range.from);
-      if (r != RULE_OK)
-        goto _done;
+      if (r != RULE_OK) goto _done;
       r = parse_int(&input[range_index + 1], input_count - range_index - 1, &ret_matcher->data.range.to);
-      if (r != RULE_OK)
-        goto _done;
+      if (r != RULE_OK) goto _done;
       break;
 
     case MATCHER_TYPE_MULTI:
@@ -100,16 +96,14 @@ matcher_compile(const unsigned char *input, usize input_count, struct matcher *r
         {
           case ',':
             r = matcher_compile(&input[matcher_start], i - matcher_start, &matcher_array[multi_index]);
-            if (r != RULE_OK)
-              goto _done;
+            if (r != RULE_OK) goto _done;
             matcher_start = i + 1;
             multi_index++;
             break;
         }
       }
       r = matcher_compile(&input[matcher_start], i - matcher_start, &matcher_array[multi_index]);
-      if (r != RULE_OK)
-        goto _done;
+      if (r != RULE_OK) goto _done;
       ret_matcher->data.multi.array = matcher_array;
       matcher_array = NULL;
       break;
@@ -117,8 +111,7 @@ matcher_compile(const unsigned char *input, usize input_count, struct matcher *r
 
   r = RULE_OK;
 _done:
-  if (r != RULE_OK && matcher_array != NULL)
-    free(matcher_array);
+  if (r != RULE_OK && matcher_array != NULL) free(matcher_array);
   return r;
 }
 
@@ -141,8 +134,7 @@ matcher_matches(struct matcher *matcher, int value)
 
     case MATCHER_TYPE_MULTI:
       for (i = 0; i < matcher->data.multi.count; i++)
-        if (matcher_matches(&matcher->data.multi.array[i], value))
-          return 1;
+        if (matcher_matches(&matcher->data.multi.array[i], value)) return 1;
 
       return 0;
   }
@@ -182,8 +174,7 @@ rule_compile(const unsigned char *input, usize input_count, struct rule **ret_ru
         if (current_matcher != NULL)
         {
           r = matcher_compile(&input[matcher_start], i - matcher_start, current_matcher);
-          if (r != RULE_OK)
-            goto _done;
+          if (r != RULE_OK) goto _done;
         }
 
         switch (input[i])
@@ -219,8 +210,7 @@ rule_compile(const unsigned char *input, usize input_count, struct rule **ret_ru
   if (current_matcher != NULL)
   {
     r = matcher_compile(&input[matcher_start], i - matcher_start, current_matcher);
-    if (r != RULE_OK)
-      goto _done;
+    if (r != RULE_OK) goto _done;
   }
 
   r = RULE_OK;
@@ -236,17 +226,13 @@ _done:
 void
 rule_free(struct rule *rule)
 {
-  if (rule->year.type == MATCHER_TYPE_MULTI)
-    free(rule->year.data.multi.array);
+  if (rule->year.type == MATCHER_TYPE_MULTI) free(rule->year.data.multi.array);
 
-  if (rule->month.type == MATCHER_TYPE_MULTI)
-    free(rule->month.data.multi.array);
+  if (rule->month.type == MATCHER_TYPE_MULTI) free(rule->month.data.multi.array);
 
-  if (rule->day.type == MATCHER_TYPE_MULTI)
-    free(rule->day.data.multi.array);
+  if (rule->day.type == MATCHER_TYPE_MULTI) free(rule->day.data.multi.array);
 
-  if (rule->week_day.type == MATCHER_TYPE_MULTI)
-    free(rule->week_day.data.multi.array);
+  if (rule->week_day.type == MATCHER_TYPE_MULTI) free(rule->week_day.data.multi.array);
 
   free(rule);
 }
@@ -255,17 +241,13 @@ rule_free(struct rule *rule)
 int
 rule_matches(struct rule *rule, struct date *date)
 {
-  if (!matcher_matches(&rule->year, date->year))
-    return 0;
+  if (!matcher_matches(&rule->year, date->year)) return 0;
 
-  if (!matcher_matches(&rule->month, date->month))
-    return 0;
+  if (!matcher_matches(&rule->month, date->month)) return 0;
 
-  if (!matcher_matches(&rule->day, date->day) && !matcher_matches(&rule->day, date_negative_day(date)))
-    return 0;
+  if (!matcher_matches(&rule->day, date->day) && !matcher_matches(&rule->day, date_negative_day(date))) return 0;
 
-  if (!matcher_matches(&rule->week_day, date->week_day))
-    return 0;
+  if (!matcher_matches(&rule->week_day, date->week_day)) return 0;
 
   return 1;
 }

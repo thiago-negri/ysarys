@@ -12,8 +12,7 @@ static int
 db_migrate_order(const char *migration, const char *applied_migration)
 {
   /* Any migration must be considered "less than" when there's no more applied migrations. */
-  if (applied_migration == NULL)
-    return -1;
+  if (applied_migration == NULL) return -1;
 
   return strcmp(migration, applied_migration);
 }
@@ -50,8 +49,7 @@ db_migrate_table_exists(sqlite3 *db)
   }
 
 _done:
-  if (stmt != NULL)
-    sqlite3_finalize(stmt);
+  if (stmt != NULL) sqlite3_finalize(stmt);
 
   return r;
 }
@@ -84,8 +82,7 @@ db_migrate_table_create(sqlite3 *db)
   }
 
 _done:
-  if (stmt != NULL)
-    sqlite3_finalize(stmt);
+  if (stmt != NULL) sqlite3_finalize(stmt);
 
   return r;
 }
@@ -178,8 +175,7 @@ db_migrate_apply(sqlite3 *db, const char *sql)
 
   r = DB_MIGRATE_OK;
 _done:
-  if (stmt != NULL)
-    sqlite3_finalize(stmt);
+  if (stmt != NULL) sqlite3_finalize(stmt);
 
   return r;
 }
@@ -268,19 +264,16 @@ db_migrate(sqlite3 *db)
 
     case DB_MIGRATE_DOESNT_EXIST:
       r = db_migrate_table_create(db);
-      if (r != DB_MIGRATE_OK)
-        goto _done;
+      if (r != DB_MIGRATE_OK) goto _done;
 
       break;
   }
 
   r = db_migrate_prepare_read(db, &stmt_read);
-  if (r != DB_MIGRATE_OK)
-    goto _done;
+  if (r != DB_MIGRATE_OK) goto _done;
 
   r = db_migrate_step(stmt_read, &applied_migration);
-  if (r != DB_MIGRATE_OK)
-    goto _done;
+  if (r != DB_MIGRATE_OK) goto _done;
 
   for (migration = db_migrations; migration->name != NULL; migration++)
   {
@@ -303,14 +296,12 @@ db_migrate(sqlite3 *db)
     if (ord < 0)
     {
       r = db_migrate_apply(db, migration->sql);
-      if (r != DB_MIGRATE_OK)
-        goto _done;
+      if (r != DB_MIGRATE_OK) goto _done;
 
       if (stmt_insert == NULL)
       {
         r = db_migrate_prepare_insert(db, &stmt_insert);
-        if (r != DB_MIGRATE_OK)
-          goto _done;
+        if (r != DB_MIGRATE_OK) goto _done;
       }
       else
       {
@@ -323,18 +314,15 @@ db_migrate(sqlite3 *db)
       }
 
       r = db_migrate_insert(stmt_insert, migration->name);
-      if (r != DB_MIGRATE_OK)
-        goto _done;
+      if (r != DB_MIGRATE_OK) goto _done;
     }
   }
 
   r = DB_MIGRATE_OK;
 _done:
-  if (stmt_read != NULL)
-    sqlite3_finalize(stmt_read);
+  if (stmt_read != NULL) sqlite3_finalize(stmt_read);
 
-  if (stmt_insert != NULL)
-    sqlite3_finalize(stmt_insert);
+  if (stmt_insert != NULL) sqlite3_finalize(stmt_insert);
 
   return r;
 }

@@ -43,12 +43,10 @@ date_to_time(struct date *date)
   y = date->year;
   m = date->month;
   d = date->day;
-  if (m <= 2)
-    y -= 1;
+  if (m <= 2) y -= 1;
   era = ((y >= 0) ? y : y - 399) / 400;
   yoe = y - era * 400;
-  if (yoe < 0)
-    yoe *= -1;
+  if (yoe < 0) yoe *= -1;
   doy = ((153 * ((m > 2) ? m - 3 : m + 9) + 2) / 5) + d - 1;
   doe = yoe * 365 + (yoe / 4) - (yoe / 100) + doy;
   return SECS_PER_DAY * (era * 146097 + doe - 719468);
@@ -72,8 +70,7 @@ date_add_days(struct date *date, int days, struct date *ret_date)
   {
     new_day -= last_day_of_month;
     new_month = (new_month % 12) + 1;
-    if (new_month == MONTH_JANUARY)
-      new_year += 1;
+    if (new_month == MONTH_JANUARY) new_year += 1;
 
     last_day_of_month = month_last_day(new_year, new_month);
   }
@@ -93,20 +90,14 @@ date_negative_day(struct date *date)
 int
 date_compare(struct date *a, struct date *b)
 {
-  if (a->year < b->year)
-    return -1;
-  if (a->year > b->year)
-    return 1;
+  if (a->year < b->year) return -1;
+  if (a->year > b->year) return 1;
 
-  if (a->month < b->month)
-    return -1;
-  if (a->month > b->month)
-    return 1;
+  if (a->month < b->month) return -1;
+  if (a->month > b->month) return 1;
 
-  if (a->day < b->day)
-    return -1;
-  if (a->day > b->day)
-    return 1;
+  if (a->day < b->day) return -1;
+  if (a->day > b->day) return 1;
 
   return 0;
 }
