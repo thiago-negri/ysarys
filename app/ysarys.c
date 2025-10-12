@@ -161,8 +161,7 @@ agenda_rm(sqlite3 *db, int argc, const char *argv[])
 		goto _done;
 	}
 
-	r = scan_int((const unsigned char *)argv[0], strlen(argv[0]),
-	             &agenda_id);
+	r = scan_int(argv[0], strlen(argv[0]), &agenda_id);
 	if (r != SCAN_OK)
 	{
 		r = YSARYS_E;
@@ -197,7 +196,7 @@ agenda_add(sqlite3 *db, int argc, const char *argv[])
 		goto _done;
 	}
 
-	scan_date((const unsigned char *)argv[0], strlen(argv[0]), &arg_due);
+	scan_date(argv[0], strlen(argv[0]), &arg_due);
 	/* TODO(tnegri): Continue scanning arguments and execute ... */
 
 	r = YSARYS_OK;
@@ -390,10 +389,10 @@ _done:
 }
 
 static int
-agenda_insert(sqlite3 *db, sqlite_int64 scheduler_id,
-              const unsigned char *description, usize description_count,
-              const unsigned char *tags_csv, usize tags_csv_count,
-              sqlite_int64 monetary_value, sqlite_int64 due_at)
+agenda_insert(sqlite3 *db, sqlite_int64 scheduler_id, const char *description,
+              usize description_count, const char *tags_csv,
+              usize tags_csv_count, sqlite_int64 monetary_value,
+              sqlite_int64 due_at)
 {
 	sqlite3_stmt *stmt = NULL;
 	const char sql[] = "INSERT INTO agenda (scheduler_id, description, "
@@ -500,11 +499,11 @@ scheduler_populate(sqlite3 *db, struct weekdate *today, int populate_from_today)
 	sqlite3_stmt *stmt_scheduler = NULL;
 	sqlite3_int64 last_run = 0;
 	sqlite3_int64 scheduler_id = 0;
-	const unsigned char *scheduler_rule = NULL;
+	const char *scheduler_rule = NULL;
 	int scheduler_rule_count = 0;
-	const unsigned char *scheduler_description = NULL;
+	const char *scheduler_description = NULL;
 	int scheduler_description_count;
-	const unsigned char *scheduler_tags_csv = NULL;
+	const char *scheduler_tags_csv = NULL;
 	int scheduler_tags_csv_count = 0;
 	sqlite3_int64 scheduler_monetary_value = 0;
 	struct rule *rule = NULL;
@@ -614,7 +613,7 @@ agenda_list_due(sqlite3 *db, struct date *today, struct date *near_future,
 	                   "description, tags_csv, monetary_value, due_at"
 	                   " FROM agenda ORDER BY due_at DESC, id DESC";
 	sqlite_int64 agenda_id = 0;
-	const unsigned char *agenda_description = NULL;
+	const char *agenda_description = NULL;
 	sqlite_int64 agenda_due_at = 0;
 	struct weekdate date = WEEKDATE_ZERO;
 	int print_details = 0;
@@ -655,7 +654,7 @@ agenda_list_due(sqlite3 *db, struct date *today, struct date *near_future,
 
 		if (print_details)
 		{
-			weekdate_fprintf(stdout, &date);
+			date_fprintf(stdout, (struct date *)&date);
 			fprintf(stdout, "  %d   %s\x001b[0m\n", (int)agenda_id,
 			        agenda_description);
 		}

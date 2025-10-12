@@ -20,7 +20,7 @@
 #include <stdlib.h>
 
 const char *current_group;
-struct date date_value = DATE_ZERO;
+struct weekdate date_value = WEEKDATE_ZERO;
 
 void
 fail(const char *message, int expected, int actual)
@@ -56,7 +56,7 @@ test_done(void)
 	current_group = NULL;
 }
 
-struct date *
+struct weekdate *
 date(int year, int month, int day, int week_day)
 {
 	date_value.year = year;
@@ -72,8 +72,7 @@ main(void)
 	struct rule *rule = NULL;
 
 	test_group("rule: <empty>");
-	assert_equal("compile", 0,
-	             rule_compile((const unsigned char *)"*", 1, &rule));
+	assert_equal("compile", 0, rule_compile("*", 1, &rule));
 	assert_equal("year", MATCHER_TYPE_ALL, rule->year.type);
 	assert_equal("month", MATCHER_TYPE_ALL, rule->month.type);
 	assert_equal("day", MATCHER_TYPE_ALL, rule->day.type);
@@ -82,8 +81,7 @@ main(void)
 
 	test_group("rule: y* m1 d2,3 w-3.-1");
 	assert_equal("compile", 0,
-	             rule_compile((const unsigned char *)"y* m1 d2,3 w-3.-1",
-	                          17, &rule));
+	             rule_compile("y* m1 d2,3 w-3.-1", 17, &rule));
 	assert_equal("year", MATCHER_TYPE_ALL, rule->year.type);
 	assert_equal("month", MATCHER_TYPE_SIMPLE, rule->month.type);
 	assert_equal("month.value", 1, rule->month.data.simple.value);
@@ -103,8 +101,7 @@ main(void)
 	rule_free(rule);
 
 	test_group("rule: d1");
-	assert_equal("compile", 0,
-	             rule_compile((const unsigned char *)"d1", 2, &rule));
+	assert_equal("compile", 0, rule_compile("d1", 2, &rule));
 	assert_equal("jan 1st", 1,
 	             rule_matches(rule, date(2024, 1, 1, WEEK_DAY_MONDAY)));
 	assert_equal("jan 2nd", 0,
@@ -134,8 +131,7 @@ main(void)
 	rule_free(rule);
 
 	test_group("rule: d-7.-1w3");
-	assert_equal("compile", 0,
-	             rule_compile((const unsigned char *)"d-7.-1w3", 8, &rule));
+	assert_equal("compile", 0, rule_compile("d-7.-1w3", 8, &rule));
 	assert_equal("jan 30th", 1,
 	             rule_matches(rule, date(2024, 1, 30, WEEK_DAY_TUESDAY)));
 	assert_equal("feb 27th", 1,

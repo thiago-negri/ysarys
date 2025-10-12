@@ -71,14 +71,14 @@ struct weekdate
 #define WEEKDATE_ZERO { 0, 0, 0, 0 }
 
 void weekdate_from_time(time_t time, struct weekdate *ret_date);
-void weekdate_fprintf(FILE *fd, struct weekdate *date);
 const char *weekdate_week_day_string(int week_day);
 void weekdate_add_days(struct weekdate *date, int days,
                        struct weekdate *ret_date);
 
+void date_fprintf(FILE *fd, struct date *date);
 time_t date_to_time(struct date *date);
 int date_negative_day(struct date *date);
-int date_compare(struct date *a, struct date *b);
+int date_compare(const struct date *a, const struct date *b);
 int date_month_last_day(int year, int month);
 
 #endif /* !DATE_H */

@@ -26,8 +26,8 @@ enum
 	SCAN_EINVAL
 };
 
-int scan_int(const unsigned char *input, int count, int *ret_value);
+int scan_int(const char *input, int count, int *ret_value);
 
-int scan_date(const unsigned char *input, int count, struct date *ret_value);
+int scan_date(const char *input, int count, struct date *ret_value);
 
 #endif /* SCAN_H */

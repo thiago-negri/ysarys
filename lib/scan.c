@@ -19,7 +19,7 @@
 #include <assert.h>
 
 int
-scan_int(const unsigned char *input, int count, int *ret_value)
+scan_int(const char *input, int count, int *ret_value)
 {
 	int result = 0;
 	int sign = 1;
@@ -49,7 +49,7 @@ scan_int(const unsigned char *input, int count, int *ret_value)
 }
 
 int
-scan_date(const unsigned char *input, int count, struct date *ret_value)
+scan_date(const char *input, int count, struct date *ret_value)
 {
 	int year = 0;
 	int month = 0;

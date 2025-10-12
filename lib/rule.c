@@ -21,7 +21,7 @@
 #include <stdlib.h>
 
 static int
-matcher_compile(const unsigned char *input, usize input_count,
+matcher_compile(const char *input, usize input_count,
                 struct matcher *ret_matcher)
 {
 	struct matcher *matcher_array = NULL;
@@ -155,7 +155,7 @@ matcher_matches(struct matcher *matcher, int value)
 }
 
 int
-rule_compile(const unsigned char *input, usize input_count,
+rule_compile(const char *input, usize input_count,
              struct rule **ret_rule)
 {
 	struct matcher *current_matcher = NULL;

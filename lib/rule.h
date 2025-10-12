@@ -72,8 +72,7 @@ struct rule
 	struct matcher week_day;
 };
 
-int rule_compile(const unsigned char *input, usize input_count,
-                 struct rule **ret_rule);
+int rule_compile(const char *input, usize input_count, struct rule **ret_rule);
 
 void rule_free(struct rule *rule);
 

@@ -105,7 +105,7 @@ date_negative_day(struct date *date)
 }
 
 int
-date_compare(struct date *a, struct date *b)
+date_compare(const struct date *a, const struct date *b)
 {
 	if (a->year < b->year)
 		return -1;
@@ -183,7 +183,7 @@ date_month_last_day(int year, int month)
 }
 
 void
-weekdate_fprintf(FILE *fd, struct weekdate *date)
+date_fprintf(FILE *fd, struct date *date)
 {
 	fprintf(fd, "%d-", date->year);
 	if (date->month < 10)
