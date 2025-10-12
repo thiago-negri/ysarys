@@ -1,4 +1,79 @@
 #1 Change timestamps to YMD triplets
 
-Stop using int64 for timestamps. Agenda entries only care about the Date part, so store everything as YMD instead of
-Timestamps.
+Stop using int64 for timestamps. Agenda entries only care about the Date part,
+so store everything as YMD instead of Timestamps.
+
+
+#2 Change from sqlite to text files
+
+Scheduler rules could be expressed with Lua scripts that would run against each
+date, e.g.:
+
+	-- rules.d/invoice.lua
+	return {
+		title = "Send Invoice",
+		tags = { "work" },
+		trigger = function(date)
+			local last_day = date.last_day_of_month
+			local day = date.day
+			local friday = date.friday
+			local weekend = date.saturday or date.sunday
+			return (friday and (day == 13 or
+			                    day == 14 or
+			                    day == last_day - 1 or
+			                    day == last_day - 2)
+			       ) or
+			       (not weekend and (day == 15 or
+			                         day == last_day))
+		end
+	}
+
+This allows more flexibility, for the "Send Invoice" one I currently use the
+rule "d15,-1" for it, and so it does not account for when it happens in
+a weekend.
+
+Even the "title" property could be extended to accept a function, letting the
+user generate dynamic titles depending on the date, e.g.:
+
+	-- rules.d/birthday.lua
+	return {
+		title = function(date)
+			return "Birthday " .. date.year - 1989
+		end,
+		tags = { "personal" },
+		trigger = function(date)
+			return date.august and date.day == 27
+		end
+	}
+
+The actual agenda could be written in a simple text file, with one entry per
+line, using tabs as field delimiters, e.g.:
+
+	-- agenda.txt
+	# ysarys: last_run 2025-08-01
+	2025-08-15	Send Invoice	invoice,work
+	2025-08-27	Birthday 36	birthday,personal
+	2025-08-31	Send Invoice	invoice,work
+
+A text file format allows the user to edit entries manually and also pipe it
+into other utilities, like grep, awk, etc.
+
+The app main purpose would be to read the Lua rules, apply them to the upcoming
+calendar (e.g. 2 months in advance) and populate the agenda file with what's
+missing.
+
+Meta data like last run time could be added to some header lines to the file,
+all prefixed with "# ysarys:" so it could easily be ignored by other tools.
+
+The third field of each entry are the tags. The filename that triggered that
+entry will always appear first in the tags, this is how the app avoids creating
+duplicate entries for the same rule.
+
+A "done" tag could be appended when the user marks an entry as complete, because
+deleting a line will end up triggering the rule again if the user runs the
+scheduler again for the same date.
+
+A "purge" command could remove entries that are in the past and tagged with
+"done".
+
+This also completes the TODO #1.
