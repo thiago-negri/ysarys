@@ -21,6 +21,10 @@
 #include <stdio.h> /* IWYU pragma: keep ... FILE* */
 #include <time.h>  /* IWYU pragma: keep ... time_t */
 
+#define SECS_PER_MINUTE            (60)
+#define SECS_PER_DAY               (24 * 60 * 60)
+#define BRAZIL_TIMEZONE_IN_MINUTES (-180)
+
 enum
 {
 	MONTH_JANUARY = 1,

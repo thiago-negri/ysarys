@@ -18,10 +18,6 @@
 #include "date.h"
 #include <stddef.h>
 
-#define SECS_PER_MINUTE            (60)
-#define SECS_PER_DAY               (24 * 60 * 60)
-#define BRAZIL_TIMEZONE_IN_MINUTES (-180)
-
 /* https://howardhinnant.github.io/date_algorithms.html#civil_from_days */
 void
 weekdate_from_time(time_t time, struct weekdate *ret_date)

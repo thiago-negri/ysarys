@@ -716,6 +716,88 @@ agenda_list(sqlite3 *db)
 	return run(db, 0);
 }
 
+static int
+status(sqlite3 *db)
+{
+	const char sql[] = "SELECT COUNT(1) FROM agenda WHERE due_at <= ?";
+	sqlite3_stmt *stmt = NULL;
+	time_t now = 0;
+	time_t tomorrow = 0;
+	time_t three_days = 0;
+	int count_tomorrow = 0;
+	int count_three_days = 0;
+	int r = 0;
+
+	now = time(NULL);
+	if (now == ((time_t)-1))
+	{
+		r = YSARYS_E;
+		goto _done;
+	}
+	tomorrow = now + SECS_PER_DAY;
+	three_days = now + (3 * SECS_PER_DAY);
+
+	r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
+	if (r != SQLITE_OK)
+	{
+		sqlite_print_error(db, "status.prepare");
+		r = YSARYS_E;
+		goto _done;
+	}
+
+	r = sqlite3_bind_int64(stmt, 1, tomorrow);
+	if (r != SQLITE_OK)
+	{
+		sqlite_print_error(db, "status.bind.tomorrow");
+		r = YSARYS_E;
+		goto _done;
+	}
+
+	r = sqlite3_step(stmt);
+	if (r != SQLITE_ROW)
+	{
+		sqlite_print_error(db, "status.step.tomorrow");
+		r = YSARYS_E;
+		goto _done;
+	}
+
+	count_tomorrow = sqlite3_column_int(stmt, 0);
+
+	r = sqlite3_reset(stmt);
+	if (r != SQLITE_OK)
+	{
+		sqlite_print_error(db, "status.reset.tomorrow");
+		r = YSARYS_E;
+		goto _done;
+	}
+
+	r = sqlite3_bind_int64(stmt, 1, three_days);
+	if (r != SQLITE_OK)
+	{
+		sqlite_print_error(db, "status.bind.three_days");
+		r = YSARYS_E;
+		goto _done;
+	}
+
+	r = sqlite3_step(stmt);
+	if (r != SQLITE_ROW)
+	{
+		sqlite_print_error(db, "status.step.three_days");
+		r = YSARYS_E;
+		goto _done;
+	}
+
+	count_three_days = sqlite3_column_int(stmt, 0);
+
+	fprintf(stdout, "%d\t%d\n", count_tomorrow, count_three_days);
+
+	r = YSARYS_OK;
+_done:
+	if (stmt != NULL)
+		sqlite3_finalize(stmt);
+	return r;
+}
+
 int
 main(int argc, const char *argv[])
 {
@@ -764,6 +846,8 @@ main(int argc, const char *argv[])
 		r = run(db, 0);
 	else if (strcmp("recheck", command) == 0)
 		r = run(db, 1);
+	else if (strcmp("status", command) == 0)
+		r = status(db);
 	else if (strcmp("scheduler", command) == 0)
 	{
 		sub_command = argi < argc ? argv[argi++] : "list";
