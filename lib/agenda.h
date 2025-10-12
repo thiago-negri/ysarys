@@ -37,12 +37,12 @@ struct agenda_file
 enum
 {
 	AGENDA_OK = 0,
-	AGENDA_EOOM,
-	AGENDA_EACCES,
-	AGENDA_ENOENT,
-	AGENDA_EERRNO,
-	AGENDA_EINVALHEAD,
-	AGENDA_EINVALENTRY
+	AGENDA_EOOM,       /* Out of memory */
+	AGENDA_EACCES,     /* Permission denied */
+	AGENDA_ENOENT,     /* No such file */
+	AGENDA_EERRNO,     /* IO error, check reterr_errno */
+	AGENDA_EINVALHEAD, /* Invalid file format, invalid header */
+	AGENDA_EINVALENTRY /* Invalid file format, invalid entry */
 };
 
 /* TODO(tnegri): Add a `struct agenda_file_err` that has file number, etc. */

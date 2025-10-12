@@ -304,5 +304,23 @@ agenda_entry_sort(struct agenda_entry *array, size_t count)
 void
 agenda_file_free(struct agenda_file *file)
 {
+	size_t i = 0;
+
+	if (file->entry_array != NULL)
+	{
+		for (i = 0; i < file->entry_count; i++)
+		{
+			if (file->entry_array[i].title != NULL)
+				free(file->entry_array[i].title);
+			file->entry_array[i].title = NULL;
+
+			if (file->entry_array[i].tag_csv != NULL)
+				free(file->entry_array[i].tag_csv);
+			file->entry_array[i].tag_csv = NULL;
+		}
+		free(file->entry_array);
+		file->entry_array = NULL;
+	}
+	file->entry_count = 0;
 	free(file);
 }
