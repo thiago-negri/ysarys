@@ -1,3 +1,20 @@
+/* ISC License
+ *
+ * Copyright (c) 2025 Thiago Negri
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include "../lib/date.h"
 #include "../lib/db_migrate.h"
 #include "../lib/intdef.h"
@@ -43,17 +60,9 @@ usage(void)
 }
 
 static int
-agenda_list(sqlite3 *db)
-{
-	(void)db;
-	/* TODO(tnegri): agenda_list */
-	return YSARYS_E;
-}
-
-static int
 agenda_archive(sqlite3 *db, int agenda_id)
 {
-	const char sql_archive[] =
+	const char sql[] =
 	    "INSERT INTO agenda_archive (scheduler_id, scheduler_archive_id, "
 	    "description, tags_csv, monetary_value, due_at, archived_at) "
 	    "SELECT scheduler_id, scheduler_archive_id, description, tags_csv, "
@@ -69,8 +78,7 @@ agenda_archive(sqlite3 *db, int agenda_id)
 		goto _done;
 	}
 
-	r = sqlite3_prepare_v2(db, sql_archive, sizeof(sql_archive), &stmt,
-	                       NULL);
+	r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
 	if (r != SQLITE_OK)
 	{
 		sqlite_print_error(db, "agenda_archive.prepare");
@@ -106,11 +114,11 @@ _done:
 static int
 agenda_delete(sqlite3 *db, int agenda_id)
 {
-	const char sql_delete[] = "DELETE FROM agenda WHERE id = ?";
+	const char sql[] = "DELETE FROM agenda WHERE id = ?";
 	sqlite3_stmt *stmt = NULL;
 	int r = 0;
 
-	r = sqlite3_prepare_v2(db, sql_delete, sizeof(sql_delete), &stmt, NULL);
+	r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
 	if (r != SQLITE_OK)
 	{
 		sqlite_print_error(db, "agenda_delete.prepare");
@@ -177,11 +185,24 @@ _done:
 static int
 agenda_add(sqlite3 *db, int argc, const char *argv[])
 {
-	(void)db;
-	(void)argc;
-	(void)argv;
-	/* TODO(tnegri): agenda_add */
-	return YSARYS_E;
+	struct date arg_due = DATE_ZERO;
+	const char *arg_description = NULL;
+	const char *arg_tags = NULL;
+	const char *arg_monetary_value = NULL;
+	int r = 0;
+
+	if (argc != 4)
+	{
+		r = YSARYS_E;
+		goto _done;
+	}
+
+	scan_date((const unsigned char *)argv[0], strlen(argv[0]), &arg_due);
+	/* TODO(tnegri): Continue scanning arguments and execute ... */
+
+	r = YSARYS_OK;
+_done:
+	return r;
 }
 
 static int
@@ -277,7 +298,7 @@ _done:
 }
 
 void
-next(struct date *date)
+next(struct weekdate *date)
 {
 	date->week_day = (date->week_day + 1) % 7;
 
@@ -470,12 +491,12 @@ _done:
 }
 
 int
-scheduler_populate(sqlite3 *db, struct date *today, int populate_from_today)
+scheduler_populate(sqlite3 *db, struct weekdate *today, int populate_from_today)
 {
-	struct date check_start_date = DATE_ZERO;
-	struct date *check_start = NULL;
-	struct date check_end = DATE_ZERO;
-	struct date current = DATE_ZERO;
+	struct weekdate check_start_date = WEEKDATE_ZERO;
+	struct weekdate *check_start = NULL;
+	struct weekdate check_end = WEEKDATE_ZERO;
+	struct weekdate current = WEEKDATE_ZERO;
 	sqlite3_stmt *stmt_scheduler = NULL;
 	sqlite3_int64 last_run = 0;
 	sqlite3_int64 scheduler_id = 0;
@@ -496,13 +517,14 @@ scheduler_populate(sqlite3 *db, struct date *today, int populate_from_today)
 	last_run = select_last_run_time(db);
 	if (last_run != 0)
 	{
-		date_from_time(last_run, &check_start_date);
+		weekdate_from_time(last_run, &check_start_date);
 		if (!populate_from_today ||
-		    date_compare(&check_start_date, today) < 0)
+		    date_compare((struct date *)&check_start_date,
+		                 (struct date *)today) < 0)
 			check_start = &check_start_date;
 	}
 
-	date_add_days(today, 60, &check_end);
+	weekdate_add_days(today, 60, &check_end);
 
 	r = select_scheduler(db, &stmt_scheduler);
 	if (r != YSARYS_OK)
@@ -532,12 +554,14 @@ scheduler_populate(sqlite3 *db, struct date *today, int populate_from_today)
 			goto _done;
 		}
 
-		for (current = *check_start; compare(&current, &check_end) <= 0;
+		for (current = *check_start;
+		     compare((struct date *)&current,
+		             (struct date *)&check_end) <= 0;
 		     next(&current))
 		{
 			if (rule_matches(rule, &current))
 			{
-				due_at = date_to_time(&current);
+				due_at = date_to_time((struct date *)&current);
 
 				r = agenda_exists(db, scheduler_id, due_at,
 				                  &exists);
@@ -570,7 +594,7 @@ scheduler_populate(sqlite3 *db, struct date *today, int populate_from_today)
 		rule_free(rule);
 	}
 
-	r = update_last_run(db, &check_end);
+	r = update_last_run(db, (struct date *)&check_end);
 	if (r != YSARYS_OK)
 		goto _done;
 
@@ -592,7 +616,7 @@ agenda_list_due(sqlite3 *db, struct date *today, struct date *near_future,
 	sqlite_int64 agenda_id = 0;
 	const unsigned char *agenda_description = NULL;
 	sqlite_int64 agenda_due_at = 0;
-	struct date date = DATE_ZERO;
+	struct weekdate date = WEEKDATE_ZERO;
 	int print_details = 0;
 	int r = 0;
 
@@ -612,18 +636,18 @@ agenda_list_due(sqlite3 *db, struct date *today, struct date *near_future,
 
 		print_details = 0;
 
-		date_from_time(agenda_due_at, &date);
-		if (date_compare(today, &date) >= 0)
+		weekdate_from_time(agenda_due_at, &date);
+		if (date_compare(today, (struct date *)&date) >= 0)
 		{
 			fprintf(stdout, "\x001b[31mDue      -- ");
 			print_details = 1;
 		}
-		else if (date_compare(near_future, &date) >= 0)
+		else if (date_compare(near_future, (struct date *)&date) >= 0)
 		{
 			fprintf(stdout, "\x001b[33mSoon     -- ");
 			print_details = 1;
 		}
-		else if (date_compare(future, &date) >= 0)
+		else if (date_compare(future, (struct date *)&date) >= 0)
 		{
 			fprintf(stdout, "\x001b[32mUpcoming -- ");
 			print_details = 1;
@@ -631,7 +655,7 @@ agenda_list_due(sqlite3 *db, struct date *today, struct date *near_future,
 
 		if (print_details)
 		{
-			date_fprintf(stdout, &date);
+			weekdate_fprintf(stdout, &date);
 			fprintf(stdout, "  %d   %s\x001b[0m\n", (int)agenda_id,
 			        agenda_description);
 		}
@@ -655,9 +679,9 @@ int
 run(sqlite3 *db, int populate_from_today)
 {
 	time_t now = 0;
-	struct date today = DATE_ZERO;
-	struct date near_future_ref_date = DATE_ZERO;
-	struct date future_ref_date = DATE_ZERO;
+	struct weekdate today = WEEKDATE_ZERO;
+	struct weekdate near_future_ref_date = WEEKDATE_ZERO;
+	struct weekdate future_ref_date = WEEKDATE_ZERO;
 	int r = 0;
 
 	now = time(NULL);
@@ -667,22 +691,29 @@ run(sqlite3 *db, int populate_from_today)
 		goto _done;
 	}
 
-	date_from_time(now, &today);
-	date_add_days(&today, 7, &near_future_ref_date);
-	date_add_days(&today, 15, &future_ref_date);
+	weekdate_from_time(now, &today);
+	weekdate_add_days(&today, 7, &near_future_ref_date);
+	weekdate_add_days(&today, 15, &future_ref_date);
 
 	r = scheduler_populate(db, &today, populate_from_today);
 	if (r != YSARYS_OK)
 		goto _done;
 
-	r = agenda_list_due(db, &today, &near_future_ref_date,
-	                    &future_ref_date);
+	r = agenda_list_due(db, (struct date *)&today,
+	                    (struct date *)&near_future_ref_date,
+	                    (struct date *)&future_ref_date);
 	if (r != YSARYS_OK)
 		goto _done;
 
 	r = YSARYS_OK;
 _done:
 	return r;
+}
+
+static int
+agenda_list(sqlite3 *db)
+{
+	return run(db, 0);
 }
 
 int

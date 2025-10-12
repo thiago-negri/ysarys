@@ -1,3 +1,20 @@
+/* ISC License
+ *
+ * Copyright (c) 2025 Thiago Negri
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #ifndef DATE_H
 #define DATE_H
 
@@ -36,21 +53,28 @@ struct date
 	int year;
 	int month;
 	int day;
+};
+
+struct weekdate
+{
+	int year;
+	int month;
+	int day;
 	int week_day;
 };
 
-#define DATE_ZERO { 0, 0, 0, 0 }
+#define DATE_ZERO     { 0, 0, 0 }
+#define WEEKDATE_ZERO { 0, 0, 0, 0 }
 
-void date_from_time(time_t time, struct date *ret_date);
+void weekdate_from_time(time_t time, struct weekdate *ret_date);
+void weekdate_fprintf(FILE *fd, struct weekdate *date);
+const char *weekdate_week_day_string(int week_day);
+void weekdate_add_days(struct weekdate *date, int days,
+                       struct weekdate *ret_date);
+
 time_t date_to_time(struct date *date);
-
-void date_add_days(struct date *date, int days, struct date *ret_date);
 int date_negative_day(struct date *date);
 int date_compare(struct date *a, struct date *b);
-void date_fprintf(FILE *fd, struct date *date);
-
-const char *date_week_day_string(int week_day);
-
 int date_month_last_day(int year, int month);
 
 #endif /* !DATE_H */

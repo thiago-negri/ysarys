@@ -1,3 +1,20 @@
+/* ISC License
+ *
+ * Copyright (c) 2025 Thiago Negri
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include "db_migrate.h"
 #include "db_migrations.h"
 #include "log.h"
@@ -14,7 +31,8 @@ enum
 static int
 db_migrate_order(const char *migration, const char *applied_migration)
 {
-	/* Any migration must be considered "less than" when there's no more applied migrations. */
+	/* Any migration must be considered "less than" when there's no more
+	 * applied migrations. */
 	if (applied_migration == NULL)
 		return -1;
 
@@ -26,7 +44,8 @@ static int
 db_migrate_table_exists(sqlite3 *db)
 {
 	sqlite3_stmt *stmt = NULL;
-	const char sql[] = "SELECT 1 FROM sqlite_schema WHERE type='table' AND name='z_migrate'";
+	const char sql[] = "SELECT 1 FROM sqlite_schema WHERE type='table' AND "
+	                   "name='z_migrate'";
 	int r = 0;
 
 	r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
@@ -64,7 +83,8 @@ static int
 db_migrate_table_create(sqlite3 *db)
 {
 	sqlite3_stmt *stmt = NULL;
-	const char sql[] = "CREATE TABLE z_migrate(filename TEXT,applied_at INT)";
+	const char sql[] =
+	    "CREATE TABLE z_migrate(filename TEXT,applied_at INT)";
 	int r = 0;
 
 	r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
@@ -133,7 +153,8 @@ db_migrate_step(sqlite3_stmt *stmt, const char **ret_filename)
 			return DB_MIGRATE_OK;
 
 		case SQLITE_ROW:
-			*ret_filename = (const char *)sqlite3_column_text(stmt, 0);
+			*ret_filename =
+			    (const char *)sqlite3_column_text(stmt, 0);
 			return DB_MIGRATE_OK;
 
 		default:
@@ -151,20 +172,23 @@ db_migrate_apply(sqlite3 *db, const char *sql)
 	size_t sql_size = 0;
 	int r = 0;
 
-	/* SQLite documentation states there is a small performance benefit for including the nul-terminator.
-	 * See: https://www3.sqlite.org/c3ref/prepare.html */
+	/* SQLite documentation states there is a small performance benefit for
+	 * including the nul-terminator. See:
+	 * https://www3.sqlite.org/c3ref/prepare.html */
 	sql_size = strlen(sql) + 1;
 
 	current_sql = sql;
 	while (current_sql != NULL && current_sql[0] != '\0')
 	{
-		r = sqlite3_prepare_v2(db, current_sql, sql_size, &stmt, &next_sql);
+		r = sqlite3_prepare_v2(db, current_sql, sql_size, &stmt,
+		                       &next_sql);
 		if (r != SQLITE_OK)
 		{
 			r = DB_MIGRATE_E;
 			goto _done;
 		}
-		log_debug("DB_MIGRATE: %.*s", next_sql - current_sql, current_sql);
+		log_debug("DB_MIGRATE: %.*s", next_sql - current_sql,
+		          current_sql);
 		sql_size -= next_sql - current_sql;
 		current_sql = next_sql;
 
@@ -192,7 +216,8 @@ static int
 db_migrate_prepare_insert(sqlite3 *db, sqlite3_stmt **ret_stmt)
 {
 	sqlite3_stmt *stmt = NULL;
-	const char sql[] = "INSERT INTO z_migrate(filename,applied_at)VALUES(?,?)";
+	const char sql[] =
+	    "INSERT INTO z_migrate(filename,applied_at)VALUES(?,?)";
 	int r = 0;
 
 	r = sqlite3_prepare_v2(db, sql, sizeof(sql), &stmt, NULL);
@@ -220,7 +245,8 @@ db_migrate_insert(sqlite3_stmt *stmt, const char *migration_name)
 	time_t now = 0;
 	int r = 0;
 
-	r = sqlite3_bind_text(stmt, 1, migration_name, strlen(migration_name), SQLITE_STATIC);
+	r = sqlite3_bind_text(stmt, 1, migration_name, strlen(migration_name),
+	                      SQLITE_STATIC);
 	if (r != SQLITE_OK)
 	{
 		r = DB_MIGRATE_E;
@@ -287,8 +313,9 @@ db_migrate(sqlite3 *db)
 
 	for (migration = db_migrations; migration->name != NULL; migration++)
 	{
-		/* Advance z_migrate cursor until we are exactly at this file or past it.
-		 * Accounts for SQLite database having extra migrations that we don't have in file system. */
+		/* Advance z_migrate cursor until we are exactly at this file or
+		 * past it. Accounts for SQLite database having extra migrations
+		 * that we don't have in file system. */
 		ord = db_migrate_order(migration->name, applied_migration);
 		while (ord > 0)
 		{
@@ -298,11 +325,13 @@ db_migrate(sqlite3 *db)
 				r = DB_MIGRATE_E;
 				goto _done;
 			}
-			ord = db_migrate_order(migration->name, applied_migration);
+			ord = db_migrate_order(migration->name,
+			                       applied_migration);
 		}
 
-		/* If current migration name is less than the current one in z_migrate, it means it has not been
-		 * applied yet, so apply it. */
+		/* If current migration name is less than the current one in
+		 * z_migrate, it means it has not been applied yet, so apply it.
+		 */
 		if (ord < 0)
 		{
 			r = db_migrate_apply(db, migration->sql);

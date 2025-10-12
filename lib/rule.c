@@ -1,10 +1,28 @@
+/* ISC License
+ *
+ * Copyright (c) 2025 Thiago Negri
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include "rule.h"
 #include "intdef.h"
 #include "scan.h"
 #include <stdlib.h>
 
 static int
-matcher_compile(const unsigned char *input, usize input_count, struct matcher *ret_matcher)
+matcher_compile(const unsigned char *input, usize input_count,
+                struct matcher *ret_matcher)
 {
 	struct matcher *matcher_array = NULL;
 	int multi_index = 0;
@@ -46,23 +64,27 @@ matcher_compile(const unsigned char *input, usize input_count, struct matcher *r
 	switch (ret_matcher->type)
 	{
 		case MATCHER_TYPE_SIMPLE:
-			r = scan_int(input, input_count, &ret_matcher->data.simple.value);
+			r = scan_int(input, input_count,
+			             &ret_matcher->data.simple.value);
 			if (r != RULE_OK)
 				goto _done;
 			break;
 
 		case MATCHER_TYPE_RANGE:
-			r = scan_int(input, range_index, &ret_matcher->data.range.from);
+			r = scan_int(input, range_index,
+			             &ret_matcher->data.range.from);
 			if (r != RULE_OK)
 				goto _done;
-			r = scan_int(&input[range_index + 1], input_count - range_index - 1,
+			r = scan_int(&input[range_index + 1],
+			             input_count - range_index - 1,
 			             &ret_matcher->data.range.to);
 			if (r != RULE_OK)
 				goto _done;
 			break;
 
 		case MATCHER_TYPE_MULTI:
-			matcher_array = malloc(sizeof(struct matcher) * multi_count);
+			matcher_array =
+			    malloc(sizeof(struct matcher) * multi_count);
 			if (matcher_array == NULL)
 			{
 				r = RULE_EOOM;
@@ -73,8 +95,11 @@ matcher_compile(const unsigned char *input, usize input_count, struct matcher *r
 				switch (input[i])
 				{
 					case ',':
-						r = matcher_compile(&input[matcher_start], i - matcher_start,
-						                    &matcher_array[multi_index]);
+						r = matcher_compile(
+						    &input[matcher_start],
+						    i - matcher_start,
+						    &matcher_array
+						        [multi_index]);
 						if (r != RULE_OK)
 							goto _done;
 						matcher_start = i + 1;
@@ -82,7 +107,9 @@ matcher_compile(const unsigned char *input, usize input_count, struct matcher *r
 						break;
 				}
 			}
-			r = matcher_compile(&input[matcher_start], i - matcher_start, &matcher_array[multi_index]);
+			r = matcher_compile(&input[matcher_start],
+			                    i - matcher_start,
+			                    &matcher_array[multi_index]);
 			if (r != RULE_OK)
 				goto _done;
 			ret_matcher->data.multi.array = matcher_array;
@@ -112,11 +139,13 @@ matcher_matches(struct matcher *matcher, int value)
 			return matcher->data.simple.value == value;
 
 		case MATCHER_TYPE_RANGE:
-			return matcher->data.range.from <= value && matcher->data.range.to >= value;
+			return matcher->data.range.from <= value &&
+			       matcher->data.range.to >= value;
 
 		case MATCHER_TYPE_MULTI:
 			for (i = 0; i < matcher->data.multi.count; i++)
-				if (matcher_matches(&matcher->data.multi.array[i], value))
+				if (matcher_matches(
+				        &matcher->data.multi.array[i], value))
 					return 1;
 
 			return 0;
@@ -126,7 +155,8 @@ matcher_matches(struct matcher *matcher, int value)
 }
 
 int
-rule_compile(const unsigned char *input, usize input_count, struct rule **ret_rule)
+rule_compile(const unsigned char *input, usize input_count,
+             struct rule **ret_rule)
 {
 	struct matcher *current_matcher = NULL;
 	usize matcher_start = 0;
@@ -156,7 +186,9 @@ rule_compile(const unsigned char *input, usize input_count, struct rule **ret_ru
 			case 'w':
 				if (current_matcher != NULL)
 				{
-					r = matcher_compile(&input[matcher_start], i - matcher_start, current_matcher);
+					r = matcher_compile(
+					    &input[matcher_start],
+					    i - matcher_start, current_matcher);
 					if (r != RULE_OK)
 						goto _done;
 				}
@@ -164,22 +196,26 @@ rule_compile(const unsigned char *input, usize input_count, struct rule **ret_ru
 				switch (input[i])
 				{
 					case 'y':
-						current_matcher = &(*ret_rule)->year;
+						current_matcher =
+						    &(*ret_rule)->year;
 						matcher_start = i + 1;
 						break;
 
 					case 'm':
-						current_matcher = &(*ret_rule)->month;
+						current_matcher =
+						    &(*ret_rule)->month;
 						matcher_start = i + 1;
 						break;
 
 					case 'd':
-						current_matcher = &(*ret_rule)->day;
+						current_matcher =
+						    &(*ret_rule)->day;
 						matcher_start = i + 1;
 						break;
 
 					case 'w':
-						current_matcher = &(*ret_rule)->week_day;
+						current_matcher =
+						    &(*ret_rule)->week_day;
 						matcher_start = i + 1;
 						break;
 
@@ -193,7 +229,8 @@ rule_compile(const unsigned char *input, usize input_count, struct rule **ret_ru
 
 	if (current_matcher != NULL)
 	{
-		r = matcher_compile(&input[matcher_start], i - matcher_start, current_matcher);
+		r = matcher_compile(&input[matcher_start], i - matcher_start,
+		                    current_matcher);
 		if (r != RULE_OK)
 			goto _done;
 	}
@@ -224,13 +261,15 @@ rule_free(struct rule *rule)
 
 /* non-0 = match */
 int
-rule_matches(struct rule *rule, struct date *date)
+rule_matches(struct rule *rule, struct weekdate *date)
 {
 	if (!matcher_matches(&rule->year, date->year))
 		return 0;
 	if (!matcher_matches(&rule->month, date->month))
 		return 0;
-	if (!matcher_matches(&rule->day, date->day) && !matcher_matches(&rule->day, date_negative_day(date)))
+	if (!matcher_matches(&rule->day, date->day) &&
+	    !matcher_matches(&rule->day,
+	                     date_negative_day((struct date *)date)))
 		return 0;
 	if (!matcher_matches(&rule->week_day, date->week_day))
 		return 0;
