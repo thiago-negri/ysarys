@@ -1,4 +1,5 @@
 /.lib_obj/
 /.test_dist/
 /dist/
+/deps/
 test.db

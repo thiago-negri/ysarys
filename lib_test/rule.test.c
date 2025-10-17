@@ -130,10 +130,14 @@ main(void)
 	             rule_matches(rule, date(2024, 12, 1, WEEK_DAY_SUNDAY)));
 	rule_free(rule);
 
-	test_group("rule: d-7.-1w3");
-	assert_equal("compile", 0, rule_compile("d-7.-1w3", 8, &rule));
-	assert_equal("jan 30th", 1,
+	test_group("rule: d-7.-1 w3");
+	assert_equal("compile", 0, rule_compile("d-7.-1 w3", 9, &rule));
+	assert_equal("jan 30th mon", 0,
+	             rule_matches(rule, date(2024, 1, 30, WEEK_DAY_MONDAY)));
+	assert_equal("jan 30th tue", 1,
 	             rule_matches(rule, date(2024, 1, 30, WEEK_DAY_TUESDAY)));
+	assert_equal("jan 30th wed", 0,
+	             rule_matches(rule, date(2024, 1, 30, WEEK_DAY_WEDNESDAY)));
 	assert_equal("feb 27th", 1,
 	             rule_matches(rule, date(2024, 2, 27, WEEK_DAY_TUESDAY)));
 	assert_equal("jan 23rd", 0,

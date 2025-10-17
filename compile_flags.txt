@@ -3,3 +3,5 @@
 -Wpedantic
 -Wextra
 -Wno-overlength-strings
+-Ideps/lua-5.4.8/install/include
+-DLUA_USE_C89

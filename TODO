@@ -77,3 +77,6 @@ A "purge" command could remove entries that are in the past and tagged with
 "done".
 
 This also completes the TODO #1.
+
+Maybe follow grep interface, deal with files sent as args, or a rule sent via
+stdin. Output to stdout and let other tools organize like sort/uniq.
