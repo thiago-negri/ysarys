@@ -40,12 +40,34 @@ weekdate_from_time(time_t time, struct weekdate *ret_date)
 	year = (m <= 2) ? y + 1 : y;
 	month = m;
 	day = d;
-	week_day = (z + 3) % 7;
+	week_day = 1 + ((z + 3) % 7);
 
 	ret_date->year = year;
 	ret_date->month = month;
 	ret_date->day = day;
 	ret_date->week_day = week_day;
+}
+
+void
+weekdate_from_date(struct date *date, struct weekdate *ret_date)
+{
+	time_t time = 0;
+
+	time = date_to_time(date);
+	weekdate_from_time(time, ret_date);
+}
+
+void
+weekdate_next(struct weekdate *date)
+{
+	struct weekdate next = WEEKDATE_ZERO;
+
+	weekdate_add_days(date, 1, &next);
+
+	date->year = next.year;
+	date->month = next.month;
+	date->day = next.day;
+	date->week_day = next.week_day;
 }
 
 /* https://howardhinnant.github.io/date_algorithms.html#days_from_civil */
@@ -78,7 +100,7 @@ weekdate_add_days(struct weekdate *date, int days, struct weekdate *ret_date)
 	int new_week_day = 0;
 
 	new_day = date->day + days;
-	new_week_day = new_day % 7;
+	new_week_day = 1 + ((date->week_day + days - 1) % 7);
 	new_month = date->month;
 	new_year = date->year;
 	last_day_of_month = date_month_last_day(new_year, new_month);

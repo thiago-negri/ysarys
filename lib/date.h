@@ -71,9 +71,11 @@ struct weekdate
 #define WEEKDATE_ZERO { 0, 0, 0, 0 }
 
 void weekdate_from_time(time_t time, struct weekdate *ret_date);
+void weekdate_from_date(struct date *date, struct weekdate *ret_date);
 const char *weekdate_week_day_string(int week_day);
 void weekdate_add_days(struct weekdate *date, int days,
                        struct weekdate *ret_date);
+void weekdate_next(struct weekdate *date);
 
 void date_fprintf(FILE *fd, struct date *date);
 time_t date_to_time(struct date *date);

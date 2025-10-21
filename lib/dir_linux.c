@@ -226,6 +226,7 @@ dir_next(dir_handle *opaque_handle, struct file_entry *ret_entry,
 		}
 	}
 
+	r = DIR_OK_DONE;
 _done:
 	return r;
 }

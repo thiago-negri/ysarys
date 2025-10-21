@@ -153,6 +153,9 @@ agenda_file_read_alloc(const char *path, struct agenda_file **ret_file,
 		r = AGENDA_EOOM;
 		goto _done;
 	}
+	file->last_run.day = 0;
+	file->last_run.month = 0;
+	file->last_run.year = 0;
 
 	file->entry_count = entry_count;
 	file->entry_array = malloc(sizeof *file->entry_array * entry_count);

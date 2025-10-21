@@ -40,6 +40,8 @@ struct file_entry
 	char *name;
 };
 
+#define FILE_ENTRY_ZERO { 0, NULL }
+
 typedef void dir_handle;
 
 int dir_first_alloc(const char *path, dir_handle **ret_handle,
