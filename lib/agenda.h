@@ -27,11 +27,20 @@ struct agenda_entry
 	char *tag_csv;
 };
 
+#define AGENDA_ENTRY_ZERO { DATE_ZERO, NULL, NULL }
+
 struct agenda_file
 {
 	struct date last_run;
 	size_t entry_count;
 	struct agenda_entry *entry_array;
+};
+
+struct agenda_array
+{
+	size_t count;
+	size_t capacity;
+	struct agenda_entry *array;
 };
 
 enum
@@ -55,5 +64,12 @@ int agenda_file_write(const char *path, struct agenda_file *file,
 int agenda_entry_sort(struct agenda_entry *array, size_t count);
 
 void agenda_file_free(struct agenda_file *file);
+
+int agenda_array_alloc(size_t capacity, struct agenda_array **ret_array);
+
+int agenda_array_push_alloc(struct agenda_array *array,
+                            struct agenda_entry *value);
+
+void agenda_array_free(struct agenda_array *array);
 
 #endif /* !AGENDA_H */

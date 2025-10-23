@@ -327,3 +327,112 @@ agenda_file_free(struct agenda_file *file)
 	file->entry_count = 0;
 	free(file);
 }
+
+int
+agenda_array_alloc(size_t capacity, struct agenda_array **ret_array)
+{
+	int r = 0;
+	struct agenda_array *array = NULL;
+
+	array = malloc(sizeof *array);
+	if (array == NULL)
+	{
+		r = AGENDA_EOOM;
+		goto _done;
+	}
+
+	array->count = 0;
+	array->capacity = capacity;
+	array->array = malloc(sizeof *array->array * capacity);
+	if (array->array == NULL)
+	{
+		r = AGENDA_EOOM;
+		goto _done;
+	}
+
+	r = AGENDA_OK;
+	*ret_array = array;
+_done:
+	if (r != AGENDA_OK)
+	{
+		if (array != NULL)
+		{
+			if (array->array != NULL)
+				free(array->array);
+			free(array);
+		}
+	}
+	return r;
+}
+
+int
+agenda_array_push_alloc(struct agenda_array *array, struct agenda_entry *value)
+{
+	int r = 0;
+	struct agenda_entry *new_array = NULL;
+	char *new_title = NULL;
+	char *new_tag_csv = NULL;
+	size_t new_capacity = 0;
+
+	new_title = malloc(strlen(value->title) + 1);
+	if (new_title == NULL)
+	{
+		r = AGENDA_EOOM;
+		goto _done;
+	}
+	strcpy(new_title, value->title);
+
+	new_tag_csv = malloc(strlen(value->tag_csv) + 1);
+	if (new_tag_csv == NULL)
+	{
+		r = AGENDA_EOOM;
+		goto _done;
+	}
+	strcpy(new_tag_csv, value->tag_csv);
+
+	if (array->count >= array->capacity)
+	{
+		new_capacity = (array->capacity + 1) * 1.25f;
+		new_array =
+		    realloc(array->array, sizeof *array->array * new_capacity);
+		if (new_array == NULL)
+		{
+			r = AGENDA_EOOM;
+			goto _done;
+		}
+
+		array->capacity = new_capacity;
+		array->array = new_array;
+	}
+
+	array->array[array->count].date = value->date;
+	array->array[array->count].title = new_title;
+	array->array[array->count].tag_csv = new_tag_csv;
+	array->count += 1;
+
+	r = AGENDA_OK;
+_done:
+	if (r != AGENDA_OK)
+	{
+		if (new_title != NULL)
+			free(new_title);
+		if (new_tag_csv != NULL)
+			free(new_tag_csv);
+	}
+	return r;
+}
+
+void
+agenda_array_free(struct agenda_array *array)
+{
+	size_t i = 0;
+
+	for (i = 0; i < array->count; i++)
+	{
+		free(array->array[i].title);
+		free(array->array[i].tag_csv);
+	}
+
+	free(array->array);
+	free(array);
+}

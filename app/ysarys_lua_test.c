@@ -27,6 +27,7 @@ int
 main(int argc, char *argv[])
 {
 	struct agenda_file *agenda = NULL;
+	struct agenda_array *array = NULL;
 	struct rule *rule = NULL;
 	struct weekdate date = WEEKDATE_ZERO;
 	struct weekdate today = WEEKDATE_ZERO;
@@ -35,10 +36,13 @@ main(int argc, char *argv[])
 	dir_handle *rules_dir = NULL;
 	struct file_entry rule_file = FILE_ENTRY_ZERO;
 	time_t now = 0;
+	size_t i = 0;
 	int r = 0;
 	int errno_ = 0;
 
-	r = agenda_file_read_alloc(argv[1], &agenda, &errno_);
+	r = agenda_array_alloc(1, &array);
+	if (r == AGENDA_OK)
+		r = agenda_file_read_alloc(argv[1], &agenda, &errno_);
 	switch (r)
 	{
 		case AGENDA_OK:
@@ -60,7 +64,7 @@ main(int argc, char *argv[])
 		case AGENDA_EERRNO:
 			errno = errno_;
 			log_error("IO error trying to read: %s.", argv[1]);
-			perror(errno);
+			perror("start");
 			return -1;
 
 		case AGENDA_EINVALHEAD:
@@ -113,7 +117,7 @@ main(int argc, char *argv[])
 		case DIR_EERRNO:
 			errno = errno_;
 			log_error("IO error trying to read: rules.d.");
-			perror(errno);
+			perror("dir_first_alloc");
 			return -1;
 	}
 
@@ -162,7 +166,7 @@ main(int argc, char *argv[])
 			case DIR_EERRNO:
 				errno = errno_;
 				log_error("IO error trying to read: rules.d.");
-				perror(errno);
+				perror("dir_next");
 				return -1;
 		}
 	}
@@ -176,12 +180,20 @@ main(int argc, char *argv[])
 	for (; date_compare((struct date *)&date, (struct date *)&max_date) < 0;
 	     weekdate_next(&date))
 	{
-		r = rule_run(rule, &date, NULL, NULL);
+		r = rule_run(rule, &date, array, NULL, NULL);
 		if (r != RULE_OK)
 		{
 			log_error("Rule error.");
 			return -1;
 		}
+	}
+
+	agenda_entry_sort(array->array, array->count);
+
+	for (i = 0; i < array->count; i++)
+	{
+		date_fprintf(stdout, &array->array[i].date);
+		fprintf(stdout, "\t%s\n", array->array[i].title);
 	}
 
 	return 0;

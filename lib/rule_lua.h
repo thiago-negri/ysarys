@@ -18,6 +18,7 @@
 #ifndef RULE_LUA_H
 #define RULE_LUA_H
 
+#include "agenda.h"
 #include "date.h"
 #include <lua.h>
 
@@ -42,7 +43,8 @@ int rule_add_file(struct rule *rule, const char *lua_source_path,
 int rule_add_string(struct rule *rule, const char *lua_source,
                     const char **reterr_lua_error);
 
-int rule_run(struct rule *rule, struct weekdate *date, size_t *reterr_index,
+int rule_run(struct rule *rule, struct weekdate *date,
+             struct agenda_array *push_to, size_t *reterr_index,
              const char **reterr_lua_error);
 
 void rule_lua_free(struct rule *rule);

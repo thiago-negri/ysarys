@@ -109,9 +109,10 @@ _done:
 }
 
 int
-rule_run(struct rule *rule, struct weekdate *date, size_t *reterr_index,
-         const char **reterr_lua_error)
+rule_run(struct rule *rule, struct weekdate *date, struct agenda_array *push_to,
+         size_t *reterr_index, const char **reterr_lua_error)
 {
+	struct agenda_entry entry = AGENDA_ENTRY_ZERO;
 	const char *title = NULL;
 	const char *tag_csv = NULL;
 	size_t i = 0;
@@ -267,6 +268,15 @@ rule_run(struct rule *rule, struct weekdate *date, size_t *reterr_index,
 
 		lua_pop(rule->lua_state, 2);
 		/* s: G, date. */
+
+		// FIXME(tnegri): Allocate it here and move to array instead of
+		// copying.
+		entry.date.day = date->day;
+		entry.date.month = date->month;
+		entry.date.year = date->year;
+		entry.tag_csv = tag_csv;
+		entry.title = title;
+		agenda_array_push_alloc(push_to, &entry);
 
 		date_fprintf(stdout, (struct date *)date);
 		fprintf(stdout, "\t%s\t%s\n", title, tag_csv);
