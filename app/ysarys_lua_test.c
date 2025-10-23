@@ -92,7 +92,7 @@ main(int argc, char *argv[])
 		weekdate_next(&date);
 	}
 
-	rule_alloc(&rule);
+	rule_lua_alloc(&rule);
 
 	r = dir_first_alloc("rules.d", &rules_dir, &rule_file, &errno_);
 	switch (r)
@@ -193,8 +193,14 @@ main(int argc, char *argv[])
 	for (i = 0; i < array->count; i++)
 	{
 		date_fprintf(stdout, &array->array[i].date);
-		fprintf(stdout, "\t%s\n", array->array[i].title);
+		fprintf(stdout, "\t%.*s\n", (int)array->array[i].title->count,
+		        array->array[i].title->array);
 	}
+
+	rule_lua_free(rule);
+	dir_close(rules_dir);
+	agenda_array_free(array);
+	agenda_file_free(agenda);
 
 	return 0;
 }

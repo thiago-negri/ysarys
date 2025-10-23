@@ -18,11 +18,12 @@
 #include "rule_lua.h"
 #include "date.h"
 #include "lua.h"
+#include "str.h"
 #include <lauxlib.h>
 #include <stdlib.h>
 
 int
-rule_alloc(struct rule **ret_rule)
+rule_lua_alloc(struct rule **ret_rule)
 {
 	struct rule *rule = NULL;
 	int r = 0;
@@ -269,21 +270,37 @@ rule_run(struct rule *rule, struct weekdate *date, struct agenda_array *push_to,
 		lua_pop(rule->lua_state, 2);
 		/* s: G, date. */
 
-		// FIXME(tnegri): Allocate it here and move to array instead of
-		// copying.
 		entry.date.day = date->day;
 		entry.date.month = date->month;
 		entry.date.year = date->year;
-		entry.tag_csv = tag_csv;
-		entry.title = title;
-		agenda_array_push_alloc(push_to, &entry);
+		entry.title = NULL;
+		entry.tag_csv = NULL;
 
-		date_fprintf(stdout, (struct date *)date);
-		fprintf(stdout, "\t%s\t%s\n", title, tag_csv);
+		r = str_alloc(title, &entry.title);
+		if (r != STR_OK)
+		{
+			r = RULE_EOOM;
+			goto _done;
+		}
+
+		r = str_alloc(tag_csv, &entry.tag_csv);
+		if (r != STR_OK)
+		{
+			r = RULE_EOOM;
+			goto _done;
+		}
+
+		agenda_array_push_alloc(push_to, &entry);
+		entry.title = NULL;
+		entry.tag_csv = NULL;
 	}
 
 	r = RULE_OK;
 _done:
+	if (entry.title != NULL)
+		free(entry.title);
+	if (entry.tag_csv != NULL)
+		free(entry.tag_csv);
 	lua_settop(rule->lua_state, lua_top);
 	return r;
 }

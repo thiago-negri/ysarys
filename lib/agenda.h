@@ -19,12 +19,13 @@
 #define AGENDA_H
 
 #include "date.h"
+#include "str.h"
 
 struct agenda_entry
 {
 	struct date date;
-	char *title;
-	char *tag_csv;
+	struct str *title;
+	struct str *tag_csv;
 };
 
 #define AGENDA_ENTRY_ZERO { DATE_ZERO, NULL, NULL }

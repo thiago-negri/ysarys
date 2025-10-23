@@ -31,20 +31,6 @@ _entry_compare(const void *a, const void *b)
 }
 
 static int
-_strdup_alloc(const char *buffer, size_t size, char **ret_str)
-{
-	char *str = NULL;
-
-	str = malloc(size + 1);
-	if (str == NULL)
-		return AGENDA_EOOM;
-	memcpy(str, buffer, size);
-	str[size] = '\0';
-	*ret_str = str;
-	return AGENDA_OK;
-}
-
-static int
 _file_read_alloc(const char *path, char **ret_buffer, size_t *ret_count,
                  int *reterr_errno)
 {
@@ -164,6 +150,14 @@ agenda_file_read_alloc(const char *path, struct agenda_file **ret_file,
 		r = AGENDA_EOOM;
 		goto _done;
 	}
+	for (i = 0; i < entry_count; i++)
+	{
+		file->entry_array[i].date.day = 0;
+		file->entry_array[i].date.month = 0;
+		file->entry_array[i].date.year = 0;
+		file->entry_array[i].title = NULL;
+		file->entry_array[i].tag_csv = NULL;
+	}
 
 	for (i = 0; i < buffer_count; i++)
 	{
@@ -215,20 +209,27 @@ agenda_file_read_alloc(const char *path, struct agenda_file **ret_file,
 			for (; i < buffer_count; i++)
 				if (buffer[i] == '\t' || buffer[i] == '\n')
 					break;
-			r = _strdup_alloc(&buffer[mark], i - mark,
-			                  &file->entry_array[entry_i].title);
-			if (r != AGENDA_OK)
+			r = str_slice_alloc(&buffer[mark], i - mark,
+			                    &file->entry_array[entry_i].title);
+			if (r != STR_OK)
+			{
+				r = AGENDA_EOOM;
 				goto _done;
+			}
 			if (buffer[i] == '\t')
 				i++;
 			mark = i;
 			for (; i < buffer_count; i++)
 				if (buffer[i] == '\n')
 					break;
-			r = _strdup_alloc(&buffer[mark], i - mark,
-			                  &file->entry_array[entry_i].tag_csv);
-			if (r != AGENDA_OK)
+			r = str_slice_alloc(
+			    &buffer[mark], i - mark,
+			    &file->entry_array[entry_i].tag_csv);
+			if (r != STR_OK)
+			{
+				r = AGENDA_EOOM;
 				goto _done;
+			}
 			entry_i++;
 		}
 		for (; i < buffer_count; i++)
@@ -243,7 +244,16 @@ _done:
 	else if (file != NULL)
 	{
 		if (file->entry_array != NULL)
+		{
+			for (i = 0; i < entry_count; i++)
+			{
+				if (file->entry_array[i].title != NULL)
+					str_free(file->entry_array[i].title);
+				if (file->entry_array[i].tag_csv != NULL)
+					str_free(file->entry_array[i].tag_csv);
+			}
 			free(file->entry_array);
+		}
 		free(file);
 	}
 	if (buffer != NULL)
@@ -374,22 +384,6 @@ agenda_array_push_alloc(struct agenda_array *array, struct agenda_entry *value)
 	char *new_tag_csv = NULL;
 	size_t new_capacity = 0;
 
-	new_title = malloc(strlen(value->title) + 1);
-	if (new_title == NULL)
-	{
-		r = AGENDA_EOOM;
-		goto _done;
-	}
-	strcpy(new_title, value->title);
-
-	new_tag_csv = malloc(strlen(value->tag_csv) + 1);
-	if (new_tag_csv == NULL)
-	{
-		r = AGENDA_EOOM;
-		goto _done;
-	}
-	strcpy(new_tag_csv, value->tag_csv);
-
 	if (array->count >= array->capacity)
 	{
 		new_capacity = (array->capacity + 1) * 1.25f;
@@ -406,8 +400,8 @@ agenda_array_push_alloc(struct agenda_array *array, struct agenda_entry *value)
 	}
 
 	array->array[array->count].date = value->date;
-	array->array[array->count].title = new_title;
-	array->array[array->count].tag_csv = new_tag_csv;
+	array->array[array->count].title = value->title;
+	array->array[array->count].tag_csv = value->tag_csv;
 	array->count += 1;
 
 	r = AGENDA_OK;
@@ -429,8 +423,8 @@ agenda_array_free(struct agenda_array *array)
 
 	for (i = 0; i < array->count; i++)
 	{
-		free(array->array[i].title);
-		free(array->array[i].tag_csv);
+		str_free(array->array[i].title);
+		str_free(array->array[i].tag_csv);
 	}
 
 	free(array->array);

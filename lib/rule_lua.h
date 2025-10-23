@@ -35,7 +35,7 @@ struct rule
 	size_t rule_count;
 };
 
-int rule_alloc(struct rule **ret_rule);
+int rule_lua_alloc(struct rule **ret_rule);
 
 int rule_add_file(struct rule *rule, const char *lua_source_path,
                   const char **reterr_lua_error);
