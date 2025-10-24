@@ -68,8 +68,8 @@ void agenda_file_free(struct agenda_file *file);
 
 int agenda_array_alloc(size_t capacity, struct agenda_array **ret_array);
 
-int agenda_array_push_alloc(struct agenda_array *array,
-                            struct agenda_entry *value);
+int agenda_array_push_alloc(struct agenda_array *array, struct date *date,
+                            struct str **mov_title, struct str **mov_tag_csv);
 
 void agenda_array_free(struct agenda_array *array);
 

@@ -1,7 +1,7 @@
 #include "str.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 size_t
 cstr_len(const char *cstr)
@@ -96,4 +96,16 @@ str_free(struct str *str)
 {
 	free(str->array);
 	free(str);
+}
+
+void
+str_print(FILE *fd, struct str *str)
+{
+	char *cur = NULL;
+	char *end = NULL;
+
+	cur = &str->array[0];
+	end = &str->array[str->count];
+	for (; cur != end; cur++)
+		fputc(*cur, fd);
 }

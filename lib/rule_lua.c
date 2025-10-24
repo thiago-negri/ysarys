@@ -113,7 +113,8 @@ int
 rule_run(struct rule *rule, struct weekdate *date, struct agenda_array *push_to,
          size_t *reterr_index, const char **reterr_lua_error)
 {
-	struct agenda_entry entry = AGENDA_ENTRY_ZERO;
+	struct str *str_title = NULL;
+	struct str *str_tag_csv = NULL;
 	const char *title = NULL;
 	const char *tag_csv = NULL;
 	size_t i = 0;
@@ -270,37 +271,34 @@ rule_run(struct rule *rule, struct weekdate *date, struct agenda_array *push_to,
 		lua_pop(rule->lua_state, 2);
 		/* s: G, date. */
 
-		entry.date.day = date->day;
-		entry.date.month = date->month;
-		entry.date.year = date->year;
-		entry.title = NULL;
-		entry.tag_csv = NULL;
+		str_title = NULL;
+		str_tag_csv = NULL;
 
-		r = str_alloc(title, &entry.title);
+		r = str_alloc(title, &str_title);
 		if (r != STR_OK)
 		{
 			r = RULE_EOOM;
 			goto _done;
 		}
 
-		r = str_alloc(tag_csv, &entry.tag_csv);
+		r = str_alloc(tag_csv, &str_tag_csv);
 		if (r != STR_OK)
 		{
 			r = RULE_EOOM;
 			goto _done;
 		}
 
-		agenda_array_push_alloc(push_to, &entry);
-		entry.title = NULL;
-		entry.tag_csv = NULL;
+		/* str_title and str_tag_csv are moved */
+		agenda_array_push_alloc(push_to, (struct date *)date,
+		                        &str_title, &str_tag_csv);
 	}
 
 	r = RULE_OK;
 _done:
-	if (entry.title != NULL)
-		free(entry.title);
-	if (entry.tag_csv != NULL)
-		free(entry.tag_csv);
+	if (str_title != NULL)
+		free(str_title);
+	if (str_tag_csv != NULL)
+		free(str_tag_csv);
 	lua_settop(rule->lua_state, lua_top);
 	return r;
 }

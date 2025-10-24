@@ -296,10 +296,12 @@ agenda_file_write(const char *path, struct agenda_file *file, int *reterr_errno)
 	for (i = 0; i < file->entry_count; i++)
 	{
 		date_fprintf(fd, &file->entry_array[i].date);
-		fprintf(fd, "\t%s\t%s\n", file->entry_array[i].title,
-		        file->entry_array[i].tag_csv);
+		fprintf(fd, "\t");
+		str_print(fd, file->entry_array[i].title);
+		fprintf(fd, "\t");
+		str_print(fd, file->entry_array[i].tag_csv);
+		fprintf(fd, "\n");
 	}
-
 	r = AGENDA_OK;
 _done:
 	if (fd != NULL)
@@ -376,12 +378,11 @@ _done:
 }
 
 int
-agenda_array_push_alloc(struct agenda_array *array, struct agenda_entry *value)
+agenda_array_push_alloc(struct agenda_array *array, struct date *date,
+                        struct str **mov_title, struct str **mov_tag_csv)
 {
 	int r = 0;
 	struct agenda_entry *new_array = NULL;
-	char *new_title = NULL;
-	char *new_tag_csv = NULL;
 	size_t new_capacity = 0;
 
 	if (array->count >= array->capacity)
@@ -399,20 +400,20 @@ agenda_array_push_alloc(struct agenda_array *array, struct agenda_entry *value)
 		array->array = new_array;
 	}
 
-	array->array[array->count].date = value->date;
-	array->array[array->count].title = value->title;
-	array->array[array->count].tag_csv = value->tag_csv;
+	array->array[array->count].date.day = date->day;
+	array->array[array->count].date.month = date->month;
+	array->array[array->count].date.year = date->year;
+
+	array->array[array->count].title = *mov_title;
+	*mov_title = NULL;
+
+	array->array[array->count].tag_csv = *mov_tag_csv;
+	*mov_tag_csv = NULL;
+
 	array->count += 1;
 
 	r = AGENDA_OK;
 _done:
-	if (r != AGENDA_OK)
-	{
-		if (new_title != NULL)
-			free(new_title);
-		if (new_tag_csv != NULL)
-			free(new_tag_csv);
-	}
 	return r;
 }
 

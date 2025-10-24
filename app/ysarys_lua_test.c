@@ -193,8 +193,11 @@ main(int argc, char *argv[])
 	for (i = 0; i < array->count; i++)
 	{
 		date_fprintf(stdout, &array->array[i].date);
-		fprintf(stdout, "\t%.*s\n", (int)array->array[i].title->count,
-		        array->array[i].title->array);
+		fprintf(stdout, "\t");
+		str_print(stdout, array->array[i].title);
+		fprintf(stdout, "\t");
+		str_print(stdout, array->array[i].tag_csv);
+		fprintf(stdout, "\n");
 	}
 
 	rule_lua_free(rule);
