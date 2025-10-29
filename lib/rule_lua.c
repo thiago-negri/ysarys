@@ -20,6 +20,7 @@
 #include "lua.h"
 #include "str.h"
 #include <lauxlib.h>
+#include <lualib.h>
 #include <stdlib.h>
 
 int
@@ -43,6 +44,8 @@ rule_lua_alloc(struct rule **ret_rule)
 		r = RULE_EOOM;
 		goto _done;
 	}
+
+	luaL_openlibs(rule->lua_state);
 
 	/* Create a new array to hold all our rules, leave it at the stack. */
 	lua_newtable(rule->lua_state);
