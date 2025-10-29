@@ -23,6 +23,12 @@
 #include <errno.h>
 #include <stdio.h>
 
+void
+usage(void)
+{
+	printf("usage");
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -39,10 +45,23 @@ main(int argc, char *argv[])
 	size_t i = 0;
 	int r = 0;
 	int errno_ = 0;
+	
+	if (argc < 2)
+	{
+		usage();
+		return -1;
+	}
 
 	r = agenda_array_alloc(1, &array);
 	if (r == AGENDA_OK)
 		r = agenda_file_read_alloc(argv[1], &agenda, &errno_);
+	for (i = 0; r == AGENDA_OK && i < agenda->entry_count; i++)
+	{
+		r = agenda_array_push_alloc(array, &agenda->entry_array[i].date,
+		                            &agenda->entry_array[i].title,
+		                            &agenda->entry_array[i].tag_csv);
+	}
+
 	switch (r)
 	{
 		case AGENDA_OK:
@@ -198,6 +217,23 @@ main(int argc, char *argv[])
 		fprintf(stdout, "\t");
 		str_print(stdout, array->array[i].tag_csv);
 		fprintf(stdout, "\n");
+	}
+
+	r = agenda_file_array_set_alloc(agenda, array);
+	if (r != AGENDA_OK)
+	{
+		fprintf(stderr, "agenda_file_array_set_alloc");
+		return -1;
+	}
+
+	agenda->last_run.day = max_date.day;
+	agenda->last_run.month = max_date.month;
+	agenda->last_run.year = max_date.year;
+	r = agenda_file_write(argv[1], agenda, &errno_);
+	if (r != AGENDA_OK)
+	{
+		fprintf(stderr, "agenda_file_write");
+		return -1;
 	}
 
 	rule_lua_free(rule);

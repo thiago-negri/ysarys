@@ -66,6 +66,9 @@ int agenda_entry_sort(struct agenda_entry *array, size_t count);
 
 void agenda_file_free(struct agenda_file *file);
 
+int agenda_file_array_set_alloc(struct agenda_file *file,
+                                struct agenda_array *array);
+
 int agenda_array_alloc(size_t capacity, struct agenda_array **ret_array);
 
 int agenda_array_push_alloc(struct agenda_array *array, struct date *date,

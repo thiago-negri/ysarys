@@ -21,6 +21,8 @@ size_t cstr_len(const char *cstr);
 
 int str_alloc(const char *cstr, struct str **ret_dst);
 
+int str_dup_alloc(struct str *src, struct str **ret_dst);
+
 int str_slice_alloc(const char *cstr, size_t count, struct str **ret_dst);
 
 void str_free(struct str *str);

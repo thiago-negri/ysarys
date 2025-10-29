@@ -326,11 +326,11 @@ agenda_file_free(struct agenda_file *file)
 		for (i = 0; i < file->entry_count; i++)
 		{
 			if (file->entry_array[i].title != NULL)
-				free(file->entry_array[i].title);
+				str_free(file->entry_array[i].title);
 			file->entry_array[i].title = NULL;
 
 			if (file->entry_array[i].tag_csv != NULL)
-				free(file->entry_array[i].tag_csv);
+				str_free(file->entry_array[i].tag_csv);
 			file->entry_array[i].tag_csv = NULL;
 		}
 		free(file->entry_array);
@@ -430,4 +430,67 @@ agenda_array_free(struct agenda_array *array)
 
 	free(array->array);
 	free(array);
+}
+
+int
+agenda_file_array_set_alloc(struct agenda_file *file,
+                            struct agenda_array *array)
+{
+	struct agenda_entry *new_array = NULL;
+	size_t size = 0;
+	size_t i = 0;
+	struct str *new_title = NULL;
+	struct str *new_tag_csv = NULL;
+	int r = 0;
+
+	size = sizeof *new_array * array->count;
+
+	new_array = malloc(size);
+	if (new_array == NULL)
+	{
+		r = AGENDA_EOOM;
+		goto _done;
+	}
+
+	for (i = 0; i < array->count; i++)
+	{
+		r = str_dup_alloc(array->array[i].title, &new_title);
+		if (r != STR_OK)
+		{
+			r = AGENDA_EOOM;
+			goto _done;
+		}
+		new_array[i].title = new_title;
+		new_title = NULL;
+
+		r = str_dup_alloc(array->array[i].tag_csv, &new_tag_csv);
+		if (r != STR_OK)
+		{
+			r = AGENDA_EOOM;
+			goto _done;
+		}
+		new_array[i].tag_csv = new_tag_csv;
+		new_tag_csv = NULL;
+
+		new_array[i].date.day = array->array[i].date.day;
+		new_array[i].date.month = array->array[i].date.month;
+		new_array[i].date.year = array->array[i].date.year;
+	}
+
+	if (file->entry_array != NULL)
+		free(file->entry_array);
+
+	file->entry_count = array->count;
+	file->entry_array = new_array;
+	new_array = NULL;
+
+	r = AGENDA_OK;
+_done:
+	if (new_title != NULL)
+		free(new_title);
+	if (new_tag_csv != NULL)
+		free(new_tag_csv);
+	if (new_array != NULL)
+		free(new_array);
+	return r;
 }
