@@ -18,11 +18,20 @@
 #include "log.h"
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void
 log_debug(const char *format, ...)
 {
 	va_list ap;
+	char *env_debug = NULL;
+
+	env_debug = getenv("DEBUG");
+	if (env_debug == NULL || strcmp("1", env_debug) != 0)
+	{
+		return;
+	}
 
 	fprintf(stderr, "DEBUG: ");
 
