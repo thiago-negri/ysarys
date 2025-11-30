@@ -209,8 +209,9 @@ agenda_file_read_alloc(const char *path, struct agenda_file **ret_file,
 			for (; i < buffer_count; i++)
 				if (buffer[i] == '\t' || buffer[i] == '\n')
 					break;
-			r = str_slice_alloc(&buffer[mark], i - mark,
-			                    &file->entry_array[entry_i].title);
+			r = str_slice_alloc(
+			    &buffer[mark], i - mark,
+			    &file->entry_array[entry_i].tag_csv);
 			if (r != STR_OK)
 			{
 				r = AGENDA_EOOM;
@@ -222,9 +223,8 @@ agenda_file_read_alloc(const char *path, struct agenda_file **ret_file,
 			for (; i < buffer_count; i++)
 				if (buffer[i] == '\n')
 					break;
-			r = str_slice_alloc(
-			    &buffer[mark], i - mark,
-			    &file->entry_array[entry_i].tag_csv);
+			r = str_slice_alloc(&buffer[mark], i - mark,
+			                    &file->entry_array[entry_i].title);
 			if (r != STR_OK)
 			{
 				r = AGENDA_EOOM;
@@ -297,9 +297,9 @@ agenda_file_write(const char *path, struct agenda_file *file, int *reterr_errno)
 	{
 		date_fprintf(fd, &file->entry_array[i].date);
 		fprintf(fd, "\t");
-		str_print(fd, file->entry_array[i].title);
-		fprintf(fd, "\t");
 		str_print(fd, file->entry_array[i].tag_csv);
+		fprintf(fd, "\t");
+		str_print(fd, file->entry_array[i].title);
 		fprintf(fd, "\n");
 	}
 	r = AGENDA_OK;
