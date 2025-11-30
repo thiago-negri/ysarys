@@ -24,9 +24,9 @@
 #include <stdio.h>
 
 void
-usage(void)
+usage(const char *command)
 {
-	printf("usage");
+	printf("Usage: %s file\n", command);
 }
 
 int
@@ -45,10 +45,10 @@ main(int argc, char *argv[])
 	size_t i = 0;
 	int r = 0;
 	int errno_ = 0;
-	
+
 	if (argc < 2)
 	{
-		usage();
+		usage(argv[0]);
 		return -1;
 	}
 
